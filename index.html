@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Galaga Arcade - Authentic Edition</title>
+    <title>Galaga Arcade - Pixel Perfect Edition</title>
     <style>
         :root {
             --arcade-black: #000000;
@@ -11,7 +11,7 @@
             --arcade-cyan: #00ffff;
             --arcade-yellow: #ffff00;
             --arcade-pink: #ff00ff;
-            --arcade-blue: #0000ff;
+            --arcade-blue: #2b2bff;
             --arcade-white: #ffffff;
             --arcade-green: #00ff00;
         }
@@ -26,7 +26,7 @@
         body {
             margin: 0;
             padding: 0;
-            background-color: #050505;
+            background-color: #080808;
             color: #fff;
             font-family: 'Courier New', Courier, monospace;
             display: flex;
@@ -39,11 +39,11 @@
 
         #game-wrapper {
             position: relative;
-            padding: 15px;
-            background: #111;
-            border-radius: 10px;
+            padding: 10px;
+            background: #151515;
+            border-radius: 8px;
             border: 4px solid #222;
-            box-shadow: 0 0 100px rgba(0,0,0,1);
+            box-shadow: 0 0 80px rgba(0,0,0,1);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -55,27 +55,18 @@
             height: 512px;
             background: var(--arcade-black);
             overflow: hidden;
-            outline: 3px solid #000;
+            outline: 2px solid #000;
         }
 
-        /* CRT Effect Overlays */
         #game-container::after {
             content: " ";
             display: block;
             position: absolute;
             top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), 
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
                         linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
             z-index: 25;
-            background-size: 100% 3px, 3px 100%;
-            pointer-events: none;
-        }
-
-        #vignette {
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.5) 100%);
-            z-index: 26;
+            background-size: 100% 2px, 2px 100%;
             pointer-events: none;
         }
 
@@ -92,10 +83,10 @@
             width: 100%;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            padding: 0 10px;
+            padding: 0 15px;
             z-index: 30;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 16px;
             text-align: center;
             pointer-events: none;
         }
@@ -106,7 +97,7 @@
         #menu-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.9);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -115,54 +106,38 @@
             text-align: center;
         }
 
-        .title-logo {
-            font-size: 3rem;
-            color: var(--arcade-red);
-            font-style: italic;
-            text-shadow: 3px 3px 0 var(--arcade-blue);
-            margin: 0;
-            letter-spacing: 4px;
-        }
-
         #start-btn {
-            margin-top: 40px;
+            margin-top: 30px;
             background: none;
             border: 2px solid var(--arcade-cyan);
             color: var(--arcade-cyan);
-            padding: 12px 24px;
-            font-size: 1.1rem;
+            padding: 10px 25px;
+            font-size: 1.2rem;
             font-family: inherit;
             cursor: pointer;
         }
 
-        /* Move touch controls out of the game area */
         #controls-wrapper {
             margin-top: 20px;
             width: 100%;
             max-width: 448px;
             display: none;
             justify-content: space-between;
-            padding: 0 10px;
+            padding: 0 15px;
         }
 
         .t-btn {
-            width: 65px; height: 65px;
+            width: 70px; height: 70px;
             background: rgba(255,255,255,0.05);
             border: 2px solid #333;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px;
-            color: #888;
-        }
-
-        .t-btn:active {
-            background: rgba(255,255,255,0.2);
-            border-color: #666;
-            color: #fff;
+            font-size: 28px;
+            color: #666;
         }
 
         @media (max-width: 600px) {
-            #game-wrapper { padding: 5px; border: none; }
+            #game-wrapper { padding: 0; border: none; }
             #game-container { width: 100vw; height: calc(100vw * (512/448)); }
             #controls-wrapper { display: flex; }
         }
@@ -172,23 +147,18 @@
 
     <div id="game-wrapper">
         <div id="game-container">
-            <div id="vignette"></div>
-            
             <div id="ui-layer">
                 <div><div class="red-text">1UP</div><div id="score-display" class="white-text">00</div></div>
                 <div><div class="red-text">HIGH SCORE</div><div id="high-score" class="white-text">20000</div></div>
                 <div><div class="red-text">2UP</div><div class="white-text">00</div></div>
             </div>
-
             <canvas id="gameCanvas"></canvas>
-
             <div id="menu-overlay">
-                <h1 class="title-logo">Galaga</h1>
-                <p style="color: var(--arcade-cyan); letter-spacing: 5px;">NAMCO REPLICA</p>
+                <h1 style="color:var(--arcade-red); font-style:italic; font-size:3.5rem; margin:0; text-shadow:3px 3px 0 var(--arcade-blue);">Galaga</h1>
+                <p style="color:var(--arcade-cyan); letter-spacing:5px;">AUTHENTIC REPLICA</p>
                 <button id="start-btn">START GAME</button>
             </div>
         </div>
-
         <div id="controls-wrapper">
             <div style="display: flex; gap: 20px;">
                 <div class="t-btn" id="l-btn">←</div>
@@ -201,54 +171,177 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const WIDTH = 448;
-        const HEIGHT = 512;
-        const SCALE = 2;
+        const WIDTH = 448, HEIGHT = 512, SCALE = 2;
 
         let audioCtx = null;
-        function playSfx(freq, type = 'square', duration = 0.1, ramp = true) {
+        function playSfx(freq, type = 'square', duration = 0.1) {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = type;
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            if (ramp) osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + duration);
+            osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + duration);
             gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
             gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + duration);
         }
 
-        const PALETTE = { 'W': '#FFF', 'R': '#F00', 'B': '#55F', 'Y': '#FF0', 'P': '#F0F', 'C': '#0FF', 'G': '#0F0', '.': 'transparent' };
+        const PALETTE = { 'W': '#FFF', 'R': '#F00', 'B': '#2B2BFF', 'Y': '#FF0', 'P': '#F0F', 'C': '#0FF', 'G': '#0F0', 'D': '#555', '.': 'transparent' };
         const SPRITES = {
-            player: [".......WW.......", ".......WW.......", "......WRRW......", "......WRRW......", "......WBBW......", "......WBBW......", ".....WWWWWW.....", "...WWWWWWWWWW...", "..WWWWWWWWWWWW..", "..WWRRWWWWWRRW..", "..WWRRWWWWWRRW..", "WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW", "RR.RR......RR.RR", "RR.RR......RR.RR"],
-            bee: [["....YY....YY....", "...YYYY..YYYY...", "...YYYYBBYYYY...", "....YYBBBBYY....", ".....BBBBBB.....", ".....BBRRBB.....", ".....BBRRBB.....", "......BBBB......", ".....BB..BB.....", "....BB....BB...."], ["................", "....YY....YY....", "...YYYYBBYYYY...", "..YYYYBBBBYYYY..", "..YYYYBBBBYYYY..", "...YYBBBBBBYY...", ".....BBRRBB.....", ".....BBRRBB.....", "......BBBB......", ".....BB..BB....."]],
-            butterfly: [["....PP....PP....", "...PPPP..PPPP...", "..PPPPWWPPPP....", "...PPWWWWPP.....", "....WWBBWW......", "....WWBBWW......", "...WWWWWWWW.....", "..WWWWWWWWWW....", "...WW....WW....."], ["................", "....PP....PP....", "...PPPPWWPPPP...", "..PPPPWWWWPPPP..", "..PPPPWWWWPPPP..", "...PPWWBBWWPP...", "....WWBBWW......", "....WWWWWW......", "...WWWWWWWW....."]],
-            boss: [["....GG....GG....", "...GGGG..GGGG...", "..GGGGCBCGGGG...", "...GGCCCCCXG....", "....CCCCCC......", "....CCRRCC......", "...CCRRRRCC.....", "..CCCCRRCCCC....", "...CC....CC....."], ["................", "....GG....GG....", "...GGGGCBCGGGG...", "..GGGGCCCCCXGGGG.", "..GGGGCCCCCXGGGG.", "...GGCCCCCCXG...", "....CCRRCC......", "...CCRRRRCC.....", "..CCCC..CCCC...."]],
-            beam: ["...CCCCCCCCCCC...", "..CCCCCCCCCCCCC..", ".CCCCCCCCCCCCCCC.", "CCCCCCCCCCCCCCCCC"]
+            player: [
+                ".......WW.......",
+                ".......WW.......",
+                "......WRRW......",
+                "......WRRW......",
+                "......WBBW......",
+                "......WBBW......",
+                ".....WWWWWW.....",
+                "...WWWWWWWWWW...",
+                "..WWWWWWWWWWWW..",
+                "..WWRRWWWWWRRW..",
+                "..WWRRWWWWWRRW..",
+                "WWWWWWWWWWWWWWWW",
+                "WWWWWWWWWWWWWWWW",
+                "RR.RR......RR.RR",
+                "RR.RR......RR.RR",
+                "R...R......R...R"
+            ],
+            bee: [
+                [
+                    "....YY....YY....",
+                    "...YYYY..YYYY...",
+                    "...YYYYBBYYYY...",
+                    "....YYBBBBYY....",
+                    ".....BBBBBB.....",
+                    ".....BBBBBB.....",
+                    ".....BBRRBB.....",
+                    ".....BBRRBB.....",
+                    "......BBBB......",
+                    "......BBBB......",
+                    ".....BB..BB.....",
+                    ".....BB..BB.....",
+                    "....BB....BB....",
+                    "....BB....BB....",
+                    "...BB......BB...",
+                    "................"
+                ],
+                [
+                    "................",
+                    "....YY....YY....",
+                    "...YYYYBBYYYY...",
+                    "..YYYYBBBBYYYY..",
+                    "..YYYYBBBBYYYY..",
+                    "...YYBBBBBBYY...",
+                    ".....BBBBBB.....",
+                    ".....BBBBBB.....",
+                    ".....BBRRBB.....",
+                    ".....BBRRBB.....",
+                    "......BBBB......",
+                    "......BBBB......",
+                    ".....BB..BB.....",
+                    ".....BB..BB.....",
+                    "....BB....BB....",
+                    "....BB....BB...."
+                ]
+            ],
+            butterfly: [
+                [
+                    "....PP....PP....",
+                    "...PPPP..PPPP...",
+                    "..PPPPWWPPPP....",
+                    "...PPWWWWPP.....",
+                    "....WWBBWW......",
+                    "....WWBBWW......",
+                    "...WWWWWWWW.....",
+                    "..WWWWWWWWWW....",
+                    "..WWWWWWWWWW....",
+                    "...WWWWWWWW.....",
+                    "...WWWWWWWW.....",
+                    "....WWWWWW......",
+                    "....WWWWWW......",
+                    "...WW....WW.....",
+                    "...W......W.....",
+                    "................"
+                ],
+                [
+                    "................",
+                    "....PP....PP....",
+                    "...PPPPWWPPPP...",
+                    "..PPPPWWWWPPPP..",
+                    "..PPPPWWWWPPPP..",
+                    "...PPWWBBWWPP...",
+                    "....WWBBWW......",
+                    "....WWBBWW......",
+                    "....WWWWWW......",
+                    "...WWWWWWWW.....",
+                    "...WWWWWWWW.....",
+                    "..WWWWWWWWWW....",
+                    "..WWWWWWWWWW....",
+                    "...WWWWWWWW.....",
+                    "...WWWWWWWW.....",
+                    "....WWWWWW......"
+                ]
+            ],
+            boss: [
+                [
+                    "....GG....GG....",
+                    "...GGGG..GGGG...",
+                    "..GGGGCBCGGGG...",
+                    "...GGCCCCCXG....",
+                    "....CCCCCC......",
+                    "....CCRRCC......",
+                    "...CCRRRRCC.....",
+                    "..CCCCRRCCCC....",
+                    "..CCCCRRCCCC....",
+                    "...CCRRRRCC.....",
+                    "...CCRRRRCC.....",
+                    "....CCRRCC......",
+                    "....CCRRCC......",
+                    "...CC....CC.....",
+                    "...C......C.....",
+                    "................"
+                ],
+                [
+                    "................",
+                    "....GG....GG....",
+                    "...GGGGCBCGGGG...",
+                    "..GGGGCCCCCXGGGG.",
+                    "..GGGGCCCCCXGGGG.",
+                    "...GGCCCCCCXG...",
+                    "....CCCCCC......",
+                    "....CCRRCC......",
+                    "....CCRRCC......",
+                    "...CCRRRRCC.....",
+                    "...CCRRRRCC.....",
+                    "..CCCCRRCCCC....",
+                    "..CCCCRRCCCC....",
+                    "...CCRRRRCC.....",
+                    "...CCRRRRCC.....",
+                    "....CCRRCC......"
+                ]
+            ]
         };
 
         let gameActive = false, score = 0, level = 1, lives = 3, frame = 0;
-        let player = null, enemies = [], bullets = [], enemyBullets = [], stars = [], particles = [];
-        let tractorBeam = null, capturedShip = null, isDualShip = false;
+        let player = null, enemies = [], bullets = [], enemyBullets = [], stars = [];
+        let tractorBeam = null, isDualShip = false;
 
         function initStars() {
             stars = [];
-            for (let i = 0; i < 80; i++) stars.push({ x: Math.random() * WIDTH, y: Math.random() * HEIGHT, speed: 0.5 + Math.random() * 1.5, color: Math.random() > 0.5 ? PALETTE.W : (Math.random() > 0.5 ? PALETTE.B : PALETTE.R) });
+            for (let i = 0; i < 60; i++) stars.push({ x: Math.random() * WIDTH, y: Math.random() * HEIGHT, speed: 0.8 + Math.random() * 2, color: [PALETTE.W, PALETTE.B, PALETTE.R, PALETTE.Y][Math.floor(Math.random() * 4)] });
         }
 
-        function drawSprite(data, x, y, rotation = 0, scale = SCALE, opacity = 1) {
+        function drawSprite(data, x, y, rotation = 0, scale = SCALE) {
             ctx.save();
             ctx.translate(x, y);
             ctx.rotate(rotation);
-            ctx.globalAlpha = opacity;
             data.forEach((row, ri) => {
                 for (let ci = 0; ci < row.length; ci++) {
                     const char = row[ci];
                     if (char !== '.' && PALETTE[char]) {
                         ctx.fillStyle = PALETTE[char];
-                        ctx.fillRect((ci - row.length / 2) * scale, (ri - data.length / 2) * scale, scale, scale);
+                        ctx.fillRect((ci - 8) * scale, (ri - 8) * scale, scale, scale);
                     }
                 }
             });
@@ -256,33 +349,19 @@
         }
 
         class Player {
-            constructor(x) {
-                this.x = x || WIDTH / 2;
-                this.y = HEIGHT - 40;
-                this.speed = 2.5; // Slower, arcade speed
-                this.cooldown = 0;
-                this.captured = false;
-                this.capturing = false;
-            }
+            constructor() { this.x = WIDTH / 2; this.y = HEIGHT - 40; this.cooldown = 0; }
             update() {
-                if (this.captured || this.capturing) return;
-                if (keys['ArrowLeft'] || touchState.left) this.x -= this.speed;
-                if (keys['ArrowRight'] || touchState.right) this.x += this.speed;
+                if (keys['ArrowLeft'] || touchState.left) this.x -= 2.5;
+                if (keys['ArrowRight'] || touchState.right) this.x += 2.5;
                 this.x = Math.max(20, Math.min(WIDTH - 20, this.x));
-
                 if ((keys['Space'] || touchState.fire) && this.cooldown <= 0) {
-                    bullets.push({ x: this.x - (isDualShip ? 12 : 0), y: this.y - 10 });
-                    if (isDualShip) bullets.push({ x: this.x + 12, y: this.y - 10 });
-                    playSfx(800, 'square', 0.1);
-                    this.cooldown = 18;
+                    bullets.push({ x: this.x - (isDualShip ? 12 : 0), y: this.y - 15 });
+                    if (isDualShip) bullets.push({ x: this.x + 12, y: this.y - 15 });
+                    playSfx(800); this.cooldown = 18;
                 }
                 if (this.cooldown > 0) this.cooldown--;
             }
-            draw() {
-                if (this.captured) return;
-                drawSprite(SPRITES.player, this.x, this.y);
-                if (isDualShip) drawSprite(SPRITES.player, this.x + 28, this.y);
-            }
+            draw() { drawSprite(SPRITES.player, this.x, this.y); if (isDualShip) drawSprite(SPRITES.player, this.x + 28, this.y); }
         }
 
         class Enemy {
@@ -291,84 +370,39 @@
                 this.x = WIDTH / 2; this.y = -20;
                 this.state = 'wait'; this.timer = delay;
                 this.angle = 0; this.phase = 0;
-                this.hp = type === 'boss' ? 2 : 1;
-                this.hasCaptured = null;
             }
             update() {
                 if (this.state === 'wait') { if (this.timer-- <= 0) this.state = 'entry'; return; }
                 if (this.state === 'entry') {
                     this.phase += 0.015;
-                    const r = 120 * (1 - this.phase);
-                    this.x = this.tx + Math.cos(this.phase * 8) * r;
-                    this.y = this.ty + Math.sin(this.phase * 8) * r - (1 - this.phase) * 100;
+                    this.x = this.tx + Math.cos(this.phase * 8) * (120 * (1 - this.phase));
+                    this.y = this.ty + Math.sin(this.phase * 8) * (120 * (1 - this.phase)) - (1 - this.phase) * 100;
                     this.angle = this.phase * 8 + Math.PI / 2;
                     if (this.phase >= 1) { this.state = 'formation'; this.angle = 0; }
                 } else if (this.state === 'formation') {
-                    this.x = this.tx + Math.sin(frame * 0.04) * 25;
+                    this.x = this.tx + Math.sin(frame * 0.04) * 30;
                     this.y = this.ty + Math.cos(frame * 0.02) * 5;
-                    if (gameActive && Math.random() < 0.0004 * level) {
-                        this.state = (this.type === 'boss' && !this.hasCaptured && Math.random() < 0.3) ? 'tractor' : 'dive';
-                        this.phase = 0;
-                    }
+                    if (Math.random() < 0.0004 * level) { this.state = 'dive'; this.phase = 0; }
                 } else if (this.state === 'dive') {
-                    this.y += 3.5;
-                    this.x += Math.sin(this.y * 0.05) * 4;
+                    this.y += 3.5; this.x += Math.sin(this.y * 0.05) * 5;
                     this.angle = Math.PI;
                     if (this.y > HEIGHT + 20) { this.y = -20; this.state = 'entry'; this.phase = 0; }
-                } else if (this.state === 'tractor') {
-                    if (this.y < HEIGHT / 2) { this.y += 2; this.angle = 0; }
-                    else {
-                        if (!tractorBeam) {
-                            tractorBeam = { x: this.x, y: this.y + 20, h: 0, state: 'grow' };
-                            playSfx(200, 'sawtooth', 2, false);
-                        }
-                        if (tractorBeam.state === 'grow') {
-                            tractorBeam.h += 3;
-                            if (tractorBeam.h > 150) tractorBeam.state = 'active';
-                        } else if (tractorBeam.state === 'active') {
-                            if (Math.abs(player.x - this.x) < 30) {
-                                player.capturing = true;
-                                player.y -= 2;
-                                if (player.y < this.y + 40) {
-                                    player.captured = true;
-                                    this.hasCaptured = player;
-                                    tractorBeam = null;
-                                    this.state = 'dive';
-                                    setTimeout(spawnNewPlayer, 1000);
-                                }
-                            }
-                            if (frame % 100 === 0) tractorBeam.state = 'shrink';
-                        } else {
-                            tractorBeam.h -= 3;
-                            if (tractorBeam.h <= 0) { tractorBeam = null; this.state = 'dive'; }
-                        }
-                    }
                 }
-                if (this.hasCaptured) { this.hasCaptured.x = this.x; this.hasCaptured.y = this.y + 30; }
             }
-            draw() {
-                if (this.state === 'wait') return;
-                drawSprite(SPRITES[this.type][Math.floor(frame / 20) % 2], this.x, this.y, this.angle);
-                if (this.hasCaptured) drawSprite(SPRITES.player, this.x, this.y + 30, Math.PI, SCALE, 0.7);
-            }
-        }
-
-        function spawnNewPlayer() {
-            if (lives > 1) { lives--; player = new Player(); }
-            else { gameActive = false; document.getElementById('menu-overlay').style.display = 'flex'; }
+            draw() { if (this.state !== 'wait') drawSprite(SPRITES[this.type][Math.floor(frame / 20) % 2], this.x, this.y, this.angle); }
         }
 
         function spawnWave() {
             enemies = [];
             const layouts = [
-                { type: 'boss', r: 0, c: 4, ox: 120, oy: 60 },
-                { type: 'butterfly', r: 1, c: 8, ox: 80, oy: 100 },
-                { type: 'bee', r: 3, c: 10, ox: 40, oy: 160 }
+                { type: 'boss', r: 1, c: 4, ox: 130, oy: 60 },
+                { type: 'butterfly', r: 2, c: 8, ox: 80, oy: 100 },
+                { type: 'bee', r: 2, c: 10, ox: 40, oy: 180 }
             ];
             layouts.forEach(l => {
-                for (let i = 0; i < l.r + 1; i++) {
+                for (let i = 0; i < l.r; i++) {
                     for (let j = 0; j < l.c; j++) {
-                        enemies.push(new Enemy(l.ox + j * 40, l.oy + i * 35, l.type, (i * l.c + j) * 3));
+                        enemies.push(new Enemy(l.ox + j * 40, l.oy + i * 35, l.type, (i * l.c + j) * 4));
                     }
                 }
             });
@@ -376,33 +410,18 @@
 
         function update() {
             if (!gameActive) return;
-            frame++;
-            player.update();
+            frame++; player.update();
             stars.forEach(s => { s.y += s.speed; if (s.y > HEIGHT) s.y = 0; });
             bullets.forEach((b, i) => {
-                b.y -= 7;
+                b.y -= 8;
                 enemies.forEach((e, ei) => {
-                    if (Math.hypot(b.x - e.x, b.y - e.y) < 15) {
-                        bullets.splice(i, 1);
-                        if (--e.hp <= 0) {
-                            if (e.hasCaptured) { capturedShip = { x: e.x, y: e.y + 30 }; }
-                            enemies.splice(ei, 1);
-                            score += e.type === 'boss' ? 400 : 100;
-                            playSfx(100, 'triangle', 0.2);
-                        }
+                    if (Math.hypot(b.x - e.x, b.y - e.y) < 18) {
+                        bullets.splice(i, 1); enemies.splice(ei, 1);
+                        score += 100; playSfx(100, 'triangle');
                     }
                 });
                 if (b.y < 0) bullets.splice(i, 1);
             });
-
-            if (capturedShip) {
-                capturedShip.y += 2;
-                if (Math.hypot(capturedShip.x - player.x, capturedShip.y - player.y) < 30) {
-                    isDualShip = true; capturedShip = null; playSfx(1000, 'square', 0.5);
-                }
-                if (capturedShip && capturedShip.y > HEIGHT) capturedShip = null;
-            }
-
             enemies.forEach(e => e.update());
             if (enemies.length === 0) { level++; spawnWave(); }
             document.getElementById('score-display').innerText = score.toString().padStart(2, '0');
@@ -410,18 +429,8 @@
 
         function draw() {
             ctx.fillStyle = '#000'; ctx.fillRect(0, 0, WIDTH, HEIGHT);
-            stars.forEach(s => { ctx.fillStyle = s.color; ctx.fillRect(s.x, s.y, 1.5, 1.5); });
-            if (tractorBeam) {
-                const grad = ctx.createLinearGradient(0, tractorBeam.y, 0, tractorBeam.y + tractorBeam.h);
-                grad.addColorStop(0, 'rgba(0,255,255,0.5)'); grad.addColorStop(1, 'rgba(0,255,255,0)');
-                ctx.fillStyle = grad; ctx.fillRect(tractorBeam.x - 40, tractorBeam.y, 80, tractorBeam.h);
-            }
-            if (gameActive) {
-                player.draw();
-                enemies.forEach(e => e.draw());
-                if (capturedShip) drawSprite(SPRITES.player, capturedShip.x, capturedShip.y, 0, SCALE, 0.8);
-                ctx.fillStyle = PALETTE.C; bullets.forEach(b => ctx.fillRect(b.x - 1, b.y - 6, 2, 12));
-            }
+            stars.forEach(s => { ctx.fillStyle = s.color; ctx.fillRect(s.x, s.y, 2, 2); });
+            if (gameActive) { player.draw(); enemies.forEach(e => e.draw()); ctx.fillStyle = PALETTE.C; bullets.forEach(b => ctx.fillRect(b.x - 1, b.y - 10, 2, 15)); }
         }
 
         function loop() { update(); draw(); requestAnimationFrame(loop); }
@@ -439,8 +448,7 @@
         bind('l-btn', 'left'); bind('r-btn', 'right'); bind('f-btn', 'fire');
 
         document.getElementById('start-btn').onclick = () => {
-            score = 0; level = 1; lives = 3; isDualShip = false;
-            player = new Player(); spawnWave(); gameActive = true;
+            score = 0; level = 1; player = new Player(); spawnWave(); gameActive = true;
             document.getElementById('menu-overlay').style.display = 'none';
         };
 
