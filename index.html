@@ -320,6 +320,44 @@
                     "...CCRRRRCC.....",
                     "....CCRRCC......"
                 ]
+            ],
+            scorpion: [
+                [
+                    ".......RR.......",
+                    "......RRRR......",
+                    ".....RRRRRR.....",
+                    "....RRRRRRRR....",
+                    "...RRWWWWWWWR...",
+                    "..RRWWWWWWWWWR..",
+                    ".RRRRRRRRRRRRRR.",
+                    "RRRRRRRRRRRRRRRR",
+                    "RRRRRRRRRRRRRRRR",
+                    ".RRRRRRRRRRRRRR.",
+                    "..RRRRRRRRRRRR..",
+                    "...RRRRRRRRRR...",
+                    "....RRRRRRRR....",
+                    ".....RR..RR.....",
+                    "......R..R......",
+                    "................"
+                ],
+                [
+                    "................",
+                    ".......RR.......",
+                    "......RRRR......",
+                    ".....RRRRRR.....",
+                    "....RRRRRRRR....",
+                    "...RRWWWWWWWR...",
+                    "..RRWWWWWWWWWR..",
+                    ".RRRRRRRRRRRRRR.",
+                    "RRRRRRRRRRRRRRRR",
+                    "RRRRRRRRRRRRRRRR",
+                    ".RRRRRRRRRRRRRR.",
+                    "..RRRRRRRRRRRR..",
+                    "...RRRRRRRRRR...",
+                    "....RRRRRRRR....",
+                    ".....RR..RR.....",
+                    "......R..R......"
+                ]
             ]
         };
 
@@ -396,7 +434,8 @@
             enemies = [];
             const layouts = [
                 { type: 'boss', r: 1, c: 4, ox: 130, oy: 60 },
-                { type: 'butterfly', r: 2, c: 8, ox: 80, oy: 100 },
+                { type: 'scorpion', r: 1, c: 8, ox: 80, oy: 100 },
+                { type: 'butterfly', r: 1, c: 8, ox: 80, oy: 140 },
                 { type: 'bee', r: 2, c: 10, ox: 40, oy: 180 }
             ];
             layouts.forEach(l => {
@@ -417,7 +456,8 @@
                 enemies.forEach((e, ei) => {
                     if (Math.hypot(b.x - e.x, b.y - e.y) < 18) {
                         bullets.splice(i, 1); enemies.splice(ei, 1);
-                        score += 100; playSfx(100, 'triangle');
+                        score += (e.type === 'boss' ? 400 : (e.type === 'scorpion' ? 200 : 100)); 
+                        playSfx(100, 'triangle');
                     }
                 });
                 if (b.y < 0) bullets.splice(i, 1);
