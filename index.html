@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Galaga Arcade - Pixel Perfect Edition</title>
     <style>
         :root {
@@ -14,47 +14,64 @@
             --arcade-blue: #2b2bff;
             --arcade-white: #ffffff;
             --arcade-green: #00ff00;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
         }
 
         * {
             box-sizing: border-box;
             user-select: none;
+            -webkit-user-select: none;
             touch-action: none;
             -webkit-tap-highlight-color: transparent;
         }
 
-        body {
+        html, body {
             margin: 0;
             padding: 0;
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
             background-color: #080808;
             color: #fff;
             font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+        }
+
+        body {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            overflow: hidden;
+            padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
         }
 
         #game-wrapper {
             position: relative;
-            padding: 10px;
-            background: #151515;
-            border-radius: 8px;
-            border: 4px solid #222;
-            box-shadow: 0 0 80px rgba(0,0,0,1);
+            width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
         }
 
         #game-container {
             position: relative;
-            width: 448px;
-            height: 512px;
+            aspect-ratio: 448 / 512;
+            /* Dynamically scale 7:8 arcade playfield to fit viewport without clipping */
+            width: min(calc(100vw - 16px), calc((100vh - 16px) * (448 / 512)));
+            width: min(calc(100dvw - 16px), calc((100dvh - 16px) * (448 / 512)));
+            height: auto;
+            max-height: calc(100vh - 16px);
+            max-height: calc(100dvh - 16px);
             background: var(--arcade-black);
             overflow: hidden;
+            border: 3px solid #222;
+            border-radius: 8px;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.95);
             outline: 2px solid #000;
         }
 
@@ -79,14 +96,14 @@
 
         #ui-layer {
             position: absolute;
-            top: 5px;
+            top: 6px;
             width: 100%;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             padding: 0 15px;
             z-index: 30;
             font-weight: bold;
-            font-size: 16px;
+            font-size: clamp(14px, 2.5vmin, 22px);
             text-align: center;
             pointer-events: none;
         }
@@ -111,35 +128,119 @@
             background: none;
             border: 2px solid var(--arcade-cyan);
             color: var(--arcade-cyan);
-            padding: 10px 25px;
-            font-size: 1.2rem;
+            padding: 12px 28px;
+            font-size: clamp(1.1rem, 2.5vmin, 1.5rem);
             font-family: inherit;
             cursor: pointer;
         }
 
+        /* Ergonomic split thumb controls anchored at bottom-left & bottom-right corners */
         #controls-wrapper {
-            margin-top: 20px;
-            width: 100%;
-            max-width: 448px;
+            position: fixed;
+            left: max(18px, var(--safe-left));
+            right: max(18px, var(--safe-right));
+            bottom: max(18px, var(--safe-bottom));
             display: none;
             justify-content: space-between;
-            padding: 0 15px;
+            align-items: flex-end;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        #dpad-group {
+            display: flex;
+            gap: 16px;
+            pointer-events: auto;
         }
 
         .t-btn {
-            width: 70px; height: 70px;
-            background: rgba(255,255,255,0.05);
-            border: 2px solid #333;
+            width: 80px;
+            height: 80px;
+            background: rgba(20, 20, 20, 0.65);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 2px solid rgba(255, 255, 255, 0.22);
             border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 28px;
-            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: rgba(255, 255, 255, 0.75);
+            pointer-events: auto;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+            transition: transform 0.06s ease, background-color 0.06s ease, border-color 0.06s ease;
         }
 
-        @media (max-width: 600px) {
-            #game-wrapper { padding: 0; border: none; }
-            #game-container { width: 100vw; height: calc(100vw * (512/448)); }
-            #controls-wrapper { display: flex; }
+        .t-btn.active,
+        .t-btn:active {
+            transform: scale(0.93);
+            background: rgba(0, 255, 255, 0.2);
+            border-color: var(--arcade-cyan);
+            color: var(--arcade-white);
+        }
+
+        #f-btn {
+            width: 88px;
+            height: 88px;
+            border-color: rgba(255, 0, 0, 0.65);
+            color: var(--arcade-red);
+            background: rgba(40, 0, 0, 0.55);
+        }
+
+        #f-btn.active,
+        #f-btn:active {
+            background: rgba(255, 0, 0, 0.3);
+            border-color: var(--arcade-red);
+        }
+
+        /* Show touch controls on touch screens (including Z Fold 8 unfolded & folded) */
+        @media (pointer: coarse), (hover: none), (max-width: 1024px) {
+            #controls-wrapper {
+                display: flex;
+            }
+        }
+
+        /*
+         * When in portrait / squarish unfolded orientation (aspect ratio < 1.15, e.g. Z Fold 8
+         * unfolded portrait ~3:4 or cover screen), reserve vertical space at the bottom so the
+         * corner thumb controls never obscure the player ship or bottom HUD.
+         */
+        @media (max-aspect-ratio: 115/100) and (pointer: coarse),
+               (max-aspect-ratio: 115/100) and (max-width: 1024px) {
+            #game-wrapper {
+                justify-content: flex-start;
+                padding-top: 8px;
+            }
+            #game-container {
+                width: min(calc(100vw - 12px), calc((100vh - 122px) * (448 / 512)));
+                width: min(calc(100dvw - 12px), calc((100dvh - 122px) * (448 / 512)));
+                max-height: calc(100vh - 122px);
+                max-height: calc(100dvh - 122px);
+            }
+        }
+
+        /* Compact button sizing for narrow cover display when folded */
+        @media (max-width: 500px) {
+            #game-container {
+                border: none;
+                border-radius: 0;
+                width: min(100vw, calc((100vh - 108px) * (448 / 512)));
+                width: min(100dvw, calc((100dvh - 108px) * (448 / 512)));
+                max-height: calc(100vh - 108px);
+                max-height: calc(100dvh - 108px);
+            }
+            .t-btn {
+                width: 68px;
+                height: 68px;
+                font-size: 26px;
+            }
+            #f-btn {
+                width: 74px;
+                height: 74px;
+            }
+            #dpad-group {
+                gap: 12px;
+            }
         }
     </style>
 </head>
@@ -160,11 +261,11 @@
             </div>
         </div>
         <div id="controls-wrapper">
-            <div style="display: flex; gap: 20px;">
+            <div id="dpad-group">
                 <div class="t-btn" id="l-btn">←</div>
                 <div class="t-btn" id="r-btn">→</div>
             </div>
-            <div class="t-btn" id="f-btn" style="border-color: var(--arcade-red); color: var(--arcade-red);">🔥</div>
+            <div class="t-btn" id="f-btn">🔥</div>
         </div>
     </div>
 
@@ -668,26 +769,69 @@
         window.onkeyup = e => keys[e.code] = false;
 
         const touchState = { left: false, right: false, fire: false };
+        function ensureAudio() {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            } catch (e) {}
+        }
+        function setBtnState(el, k, state) {
+            touchState[k] = state;
+            if (el && el.classList) el.classList.toggle('active', state);
+        }
         function bind(id, k) {
             const el = document.getElementById(id);
             if (!el) return;
             const activate = e => {
-                if (e.preventDefault) e.preventDefault();
-                touchState[k] = true;
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
+                if (e && e.preventDefault) e.preventDefault();
+                setBtnState(el, k, true);
+                ensureAudio();
             };
             const deactivate = e => {
-                if (e.preventDefault) e.preventDefault();
-                touchState[k] = false;
+                if (e && e.preventDefault) e.preventDefault();
+                setBtnState(el, k, false);
             };
             el.ontouchstart = activate;
             el.ontouchend = deactivate;
+            el.ontouchcancel = deactivate;
             el.onmousedown = activate;
             el.onmouseup = deactivate;
             el.onmouseleave = deactivate;
         }
         bind('l-btn', 'left'); bind('r-btn', 'right'); bind('f-btn', 'fire');
+
+        // Allow smooth thumb sliding between Left and Right buttons on the D-pad
+        const dpadGroup = document.getElementById('dpad-group');
+        if (dpadGroup) {
+            const handleDpadTouch = e => {
+                if (e && e.preventDefault) e.preventDefault();
+                ensureAudio();
+                const lEl = document.getElementById('l-btn');
+                const rEl = document.getElementById('r-btn');
+                if (!lEl || !rEl || !lEl.getBoundingClientRect) return;
+                const lRect = lEl.getBoundingClientRect();
+                const rRect = rEl.getBoundingClientRect();
+                let leftHit = false, rightHit = false;
+                const touches = e.touches || [];
+                for (let i = 0; i < touches.length; i++) {
+                    const t = touches[i];
+                    if (t.clientX >= lRect.left - 12 && t.clientX <= lRect.right + 6 &&
+                        t.clientY >= lRect.top - 24 && t.clientY <= lRect.bottom + 24) {
+                        leftHit = true;
+                    }
+                    if (t.clientX >= rRect.left - 6 && t.clientX <= rRect.right + 12 &&
+                        t.clientY >= rRect.top - 24 && t.clientY <= rRect.bottom + 24) {
+                        rightHit = true;
+                    }
+                }
+                setBtnState(lEl, 'left', leftHit);
+                setBtnState(rEl, 'right', rightHit);
+            };
+            dpadGroup.ontouchstart = handleDpadTouch;
+            dpadGroup.ontouchmove = handleDpadTouch;
+            dpadGroup.ontouchend = handleDpadTouch;
+            dpadGroup.ontouchcancel = handleDpadTouch;
+        }
 
         document.getElementById('start-btn').onclick = () => {
             score = 0;
