@@ -291,179 +291,194 @@
             } catch (e) {}
         }
 
-        const PALETTE = { 'W': '#FFF', 'R': '#F00', 'B': '#2B2BFF', 'Y': '#FF0', 'P': '#F0F', 'C': '#0FF', 'G': '#0F0', 'D': '#555', '.': 'transparent' };
+        const PALETTE = {
+            'W': '#DEDEDE',
+            'R': '#FF0000',
+            'B': '#0068DE',
+            'V': '#0000DE',
+            'Y': '#FFFF00',
+            'T': '#009797',
+            'O': '#DE4700',
+            'P': '#9700DE',
+            'M': '#FF00DE',
+            'C': '#00FFFF',
+            'G': '#00FF00',
+            'D': '#555555',
+            '.': 'transparent'
+        };
         const SPRITES = {
             player: [
-                ".......WW.......",
-                ".......WW.......",
-                "......WRRW......",
-                "......WRRW......",
-                "......WBBW......",
-                "......WBBW......",
-                ".....WWWWWW.....",
-                "...WWWWWWWWWW...",
-                "..WWWWWWWWWWWW..",
-                "..WWRRWWWWWRRW..",
-                "..WWRRWWWWWRRW..",
-                "WWWWWWWWWWWWWWWW",
-                "WWWWWWWWWWWWWWWW",
-                "RR.RR......RR.RR",
-                "RR.RR......RR.RR",
-                "R...R......R...R"
+                ".......W........",
+                ".......W........",
+                ".......W........",
+                "......WWW.......",
+                "......WWW.......",
+                "...R..WWW..R....",
+                "...R..WWW..R....",
+                "...W.WWWWW.W....",
+                "R..WBWWRWWBW..R.",
+                "R..BWWRRRWWB..R.",
+                "W..WWWRWRWWW..W.",
+                "W.WWWWWWWWWWW.W.",
+                "WWWWWRWWWRWWWWW.",
+                "WWW.RRWWWRR.WWW.",
+                "WW..RR.W.RR..WW.",
+                "W......W......W."
             ],
             bee: [
                 [
-                    "....YY....YY....",
-                    "...YYYY..YYYY...",
-                    "...YYYYBBYYYY...",
-                    "....YYBBBBYY....",
-                    ".....BBBBBB.....",
-                    ".....BBBBBB.....",
-                    ".....BBRRBB.....",
-                    ".....BBRRBB.....",
-                    "......BBBB......",
-                    "......BBBB......",
-                    ".....BB..BB.....",
-                    ".....BB..BB.....",
-                    "....BB....BB....",
-                    "....BB....BB....",
-                    "...BB......BB...",
+                    "................",
+                    "................",
+                    "..B....Y....B...",
+                    "..B..YRYRY..B...",
+                    "...B.RRYRR.B....",
+                    ".....YYYYY......",
+                    "...BBYYYYYBB....",
+                    "..BBBRRRRRBBB...",
+                    "..BBB.RRR.BBB...",
+                    ".BBBB.YYY.BBBB..",
+                    "..BBB..RRR..BBB.",
+                    "..BBB...R...BBB.",
+                    "................",
+                    "................",
+                    "................",
                     "................"
                 ],
                 [
                     "................",
-                    "....YY....YY....",
-                    "...YYYYBBYYYY...",
-                    "..YYYYBBBBYYYY..",
-                    "..YYYYBBBBYYYY..",
-                    "...YYBBBBBBYY...",
-                    ".....BBBBBB.....",
-                    ".....BBBBBB.....",
-                    ".....BBRRBB.....",
-                    ".....BBRRBB.....",
-                    "......BBBB......",
-                    "......BBBB......",
-                    ".....BB..BB.....",
-                    ".....BB..BB.....",
-                    "....BB....BB....",
-                    "....BB....BB...."
+                    "................",
+                    "...B...Y...B....",
+                    "...B.YRYRY.B....",
+                    "....BRRYRRB.....",
+                    ".....YYYYY......",
+                    "....BBYYYBB.....",
+                    "....BBRRRBB.....",
+                    "...BB.RRR.BB....",
+                    "...BB.YYY.BB....",
+                    "...BB.RRR.BB....",
+                    "...BB..R..BB....",
+                    "................",
+                    "................",
+                    "................",
+                    "................"
                 ]
             ],
             butterfly: [
                 [
-                    "....PP....PP....",
-                    "...PPPP..PPPP...",
-                    "..PPPPWWPPPP....",
-                    "...PPWWWWPP.....",
-                    "....WWBBWW......",
-                    "....WWBBWW......",
-                    "...WWWWWWWW.....",
-                    "..WWWWWWWWWW....",
-                    "..WWWWWWWWWW....",
-                    "...WWWWWWWW.....",
-                    "...WWWWWWWW.....",
-                    "....WWWWWW......",
-                    "....WWWWWW......",
-                    "...WW....WW.....",
-                    "...W......W.....",
+                    "................",
+                    "................",
+                    "................",
+                    "...R..B.B..R....",
+                    ".RRR..B.B..RRR..",
+                    ".RRR.WRWRW.RRR..",
+                    ".RRR.WWWWW.RRR..",
+                    "..RRRRWWWRRRR...",
+                    "...RRRBBBRRR....",
+                    "..RRRRBBBRRRR...",
+                    ".RRRRRWWWRRRRR..",
+                    "..RRR.BBB.RRR...",
+                    "....R.....R.....",
+                    "................",
+                    "................",
                     "................"
                 ],
                 [
                     "................",
-                    "....PP....PP....",
-                    "...PPPPWWPPPP...",
-                    "..PPPPWWWWPPPP..",
-                    "..PPPPWWWWPPPP..",
-                    "...PPWWBBWWPP...",
-                    "....WWBBWW......",
-                    "....WWBBWW......",
-                    "....WWWWWW......",
-                    "...WWWWWWWW.....",
-                    "...WWWWWWWW.....",
-                    "..WWWWWWWWWW....",
-                    "..WWWWWWWWWW....",
-                    "...WWWWWWWW.....",
-                    "...WWWWWWWW.....",
-                    "....WWWWWW......"
+                    "................",
+                    "................",
+                    "....R.......R...",
+                    "....R..B.B..R...",
+                    "....R.WRWRW.R...",
+                    "....R.WWWWW.R...",
+                    "....RRRWWWRRR...",
+                    "......RBBBR.....",
+                    "....RRRBBBRRR...",
+                    "....RRRWWWRRR...",
+                    "....RR.BBB.RR...",
+                    "....RR..B..RR...",
+                    "................",
+                    "................",
+                    "................"
                 ]
             ],
             boss: [
                 [
-                    "....GG....GG....",
-                    "...GGGG..GGGG...",
-                    "..GGGGCBCGGGG...",
-                    "...GGCCCCCXG....",
-                    "....CCCCCC......",
-                    "....CCRRCC......",
-                    "...CCRRRRCC.....",
-                    "..CCCCRRCCCC....",
-                    "..CCCCRRCCCC....",
-                    "...CCRRRRCC.....",
-                    "...CCRRRRCC.....",
-                    "....CCRRCC......",
-                    "....CCRRCC......",
-                    "...CC....CC.....",
-                    "...C......C.....",
-                    "................"
+                    ".......T.T......",
+                    ".......T.T......",
+                    "....TTOOTTOOT...",
+                    ".....TOOTTOOT...",
+                    "......TTTTT.....",
+                    ".....TYYTYYT....",
+                    "...TTTYYYYYTTT..",
+                    ".TTTTTYYYYYTTTTT",
+                    "..TTTTYYYYYTTTT.",
+                    "..TOTT.O.O.TTOT.",
+                    ".TTOT..O.O..TOTT",
+                    ".TOTT.......TTOT",
+                    ".TOOT.......TOOT",
+                    ".TOOT.......TOOT",
+                    ".TTTT.......TTTT",
+                    "..TT.........TT."
                 ],
                 [
                     "................",
-                    "....GG....GG....",
-                    "...GGGGCBCGGGG...",
-                    "..GGGGCCCCCXGGGG.",
-                    "..GGGGCCCCCXGGGG.",
-                    "...GGCCCCCCXG...",
-                    "....CCCCCC......",
-                    "....CCRRCC......",
-                    "....CCRRCC......",
-                    "...CCRRRRCC.....",
-                    "...CCRRRRCC.....",
-                    "..CCCCRRCCCC....",
-                    "..CCCCRRCCCC....",
-                    "...CCRRRRCC.....",
-                    "...CCRRRRCC.....",
-                    "....CCRRCC......"
+                    ".......T.T......",
+                    "....TTOOTTOOT...",
+                    ".....TOOTTOOT...",
+                    "......TTTTT.....",
+                    "....TTYYTYYTT...",
+                    "...TTTYYYYYTTT..",
+                    ".TTTTTYYYYYTTTTT",
+                    "..TTT.YYYYY.TTT.",
+                    "...TT..O.O..TT..",
+                    "...TT..O.O..TT..",
+                    "...TTT.....TTT..",
+                    "....TT.....TT...",
+                    ".....TT...TT....",
+                    "......TT.TT.....",
+                    ".......T.T......"
                 ]
             ],
-            scorpion: [
+            boss_hit: [
                 [
-                    ".......RR.......",
-                    "......RRRR......",
-                    ".....RRRRRR.....",
-                    "....RRRRRRRR....",
-                    "...RRWWWWWWWR...",
-                    "..RRWWWWWWWWWR..",
-                    ".RRRRRRRRRRRRRR.",
-                    "RRRRRRRRRRRRRRRR",
-                    "RRRRRRRRRRRRRRRR",
-                    ".RRRRRRRRRRRRRR.",
-                    "..RRRRRRRRRRRR..",
-                    "...RRRRRRRRRR...",
-                    "....RRRRRRRR....",
-                    ".....RR..RR.....",
-                    "......R..R......",
-                    "................"
+                    ".......B.B......",
+                    ".......B.B......",
+                    "....BBMMBBMMB...",
+                    ".....BMMBBMMB...",
+                    "......BBBBB.....",
+                    ".....BPPBPPB....",
+                    "...BBBPPPPPBBB..",
+                    ".BBBBBPPPPPBBBBB",
+                    "..BBBBPPPPPBBBB.",
+                    "..BMBB.M.M.BBMB.",
+                    ".BBMB..M.M..BMBB",
+                    ".BMBB.......BBMB",
+                    ".BMMB.......BMMB",
+                    ".BMMB.......BMMB",
+                    ".BBBB.......BBBB",
+                    "..BB.........BB."
                 ],
                 [
                     "................",
-                    ".......RR.......",
-                    "......RRRR......",
-                    ".....RRRRRR.....",
-                    "....RRRRRRRR....",
-                    "...RRWWWWWWWR...",
-                    "..RRWWWWWWWWWR..",
-                    ".RRRRRRRRRRRRRR.",
-                    "RRRRRRRRRRRRRRRR",
-                    "RRRRRRRRRRRRRRRR",
-                    ".RRRRRRRRRRRRRR.",
-                    "..RRRRRRRRRRRR..",
-                    "...RRRRRRRRRR...",
-                    "....RRRRRRRR....",
-                    ".....RR..RR.....",
-                    "......R..R......"
+                    ".......B.B......",
+                    "....BBMMBBMMB...",
+                    ".....BMMBBMMB...",
+                    "......BBBBB.....",
+                    "....BBPPBPPBB...",
+                    "...BBBPPPPPBBB..",
+                    ".BBBBBPPPPPBBBBB",
+                    "..BBB.PPPPP.BBB.",
+                    "...BB..M.M..BB..",
+                    "...BB..M.M..BB..",
+                    "...BBB.....BBB..",
+                    "....BB.....BB...",
+                    ".....BB...BB....",
+                    "......BB.BB.....",
+                    ".......B.B......"
                 ]
             ]
         };
+        SPRITES.scorpion = SPRITES.butterfly;
 
         let gameActive = false, score = 0, level = 1, lives = 3, frame = 0, highScore = 20000;
         let player = null, enemies = [], bullets = [], enemyBullets = [], stars = [], particles = [];
@@ -471,20 +486,20 @@
 
         function initStars() {
             stars = [];
-            for (let i = 0; i < 60; i++) stars.push({ x: Math.random() * WIDTH, y: Math.random() * HEIGHT, speed: 0.8 + Math.random() * 2, color: [PALETTE.W, PALETTE.B, PALETTE.R, PALETTE.Y][Math.floor(Math.random() * 4)] });
+            for (let i = 0; i < 60; i++) stars.push({ x: Math.random() * WIDTH, y: Math.random() * HEIGHT, speed: 0.5 + Math.random() * 0.9, color: [PALETTE.W, PALETTE.B, PALETTE.R, PALETTE.Y][Math.floor(Math.random() * 4)] });
         }
 
         function createExplosion(x, y, count = 20) {
             const colors = [PALETTE.W, PALETTE.Y, PALETTE.R, '#FF8800', PALETTE.C];
             for (let i = 0; i < count; i++) {
                 const ang = Math.random() * Math.PI * 2;
-                const spd = 1 + Math.random() * 4.5;
+                const spd = 0.8 + Math.random() * 3.0;
                 particles.push({
                     x, y,
                     vx: Math.cos(ang) * spd,
                     vy: Math.sin(ang) * spd,
                     life: 1.0,
-                    decay: 0.02 + Math.random() * 0.02,
+                    decay: 0.018 + Math.random() * 0.018,
                     color: colors[Math.floor(Math.random() * colors.length)],
                     size: 2 + Math.random() * 2
                 });
@@ -528,8 +543,8 @@
                 }
                 if (this.invulnerable > 0) this.invulnerable--;
 
-                if (keys['ArrowLeft'] || touchState.left) this.x -= 2.5;
-                if (keys['ArrowRight'] || touchState.right) this.x += 2.5;
+                if (keys['ArrowLeft'] || touchState.left) this.x -= 2.2;
+                if (keys['ArrowRight'] || touchState.right) this.x += 2.2;
                 this.x = Math.max(20, Math.min(WIDTH - (isDualShip ? 48 : 20), this.x));
                 if ((keys['Space'] || touchState.fire) && this.cooldown <= 0) {
                     bullets.push({ x: this.x, y: this.y - 15 });
@@ -549,6 +564,7 @@
         class Enemy {
             constructor(tx, ty, type, delay) {
                 this.tx = tx; this.ty = ty; this.type = type;
+                this.hp = type === 'boss' ? 2 : 1;
                 this.x = WIDTH / 2; this.y = -20;
                 this.state = 'wait'; this.timer = delay;
                 this.angle = 0; this.phase = 0;
@@ -556,26 +572,37 @@
             update() {
                 if (this.state === 'wait') { if (this.timer-- <= 0) this.state = 'entry'; return; }
                 if (this.state === 'entry') {
-                    this.phase += 0.015;
-                    this.x = this.tx + Math.cos(this.phase * 8) * (120 * (1 - this.phase));
-                    this.y = this.ty + Math.sin(this.phase * 8) * (120 * (1 - this.phase)) - (1 - this.phase) * 100;
-                    this.angle = this.phase * 8 + Math.PI / 2;
+                    this.phase += 0.0085;
+                    this.x = this.tx + Math.cos(this.phase * 4.5) * (110 * (1 - this.phase));
+                    this.y = this.ty + Math.sin(this.phase * 4.5) * (110 * (1 - this.phase)) - (1 - this.phase) * 90;
+                    this.angle = this.phase * 4.5 + Math.PI / 2;
                     if (this.phase >= 1) { this.state = 'formation'; this.angle = 0; }
                 } else if (this.state === 'formation') {
-                    this.x = this.tx + Math.sin(frame * 0.04) * 30;
-                    this.y = this.ty + Math.cos(frame * 0.02) * 5;
-                    if (Math.random() < 0.0004 * level) { this.state = 'dive'; this.phase = 0; }
+                    this.x = this.tx + Math.sin(frame * 0.018) * 20;
+                    this.y = this.ty + Math.cos(frame * 0.012) * 3;
+                    const activeDives = enemies.filter(e => e.state === 'dive').length;
+                    const maxDives = Math.min(2 + Math.floor((level - 1) * 0.5), 5);
+                    if (activeDives < maxDives && Math.random() < 0.00022 * (1 + (level - 1) * 0.25)) {
+                        this.state = 'dive';
+                        this.phase = 0;
+                    }
                 } else if (this.state === 'dive') {
-                    this.y += 3.5; this.x += Math.sin(this.y * 0.05) * 5;
+                    this.y += 2.1;
+                    this.x += Math.sin(this.y * 0.022) * 2.4;
                     this.angle = Math.PI;
-                    if (player && Math.random() < 0.015 && this.y < player.y - 60 && enemyBullets.length < 5) {
+                    if (player && Math.random() < 0.008 && this.y > 60 && this.y < player.y - 80 && enemyBullets.length < 3) {
                         enemyBullets.push({ x: this.x, y: this.y + 10 });
                         playSfx(350, 'sawtooth', 0.05);
                     }
                     if (this.y > HEIGHT + 20) { this.y = -20; this.state = 'entry'; this.phase = 0; }
                 }
             }
-            draw() { if (this.state !== 'wait') drawSprite(SPRITES[this.type][Math.floor(frame / 20) % 2], this.x, this.y, this.angle); }
+            draw() {
+                if (this.state === 'wait') return;
+                const spriteKey = (this.type === 'boss' && this.hp === 1) ? 'boss_hit' : this.type;
+                const frames = SPRITES[spriteKey] || SPRITES.bee;
+                drawSprite(frames[Math.floor(frame / 32) % 2], this.x, this.y, this.angle);
+            }
         }
 
         function handlePlayerHit(isDualHit = false) {
@@ -618,15 +645,15 @@
         function spawnWave() {
             enemies = [];
             const layouts = [
-                { type: 'boss', r: 1, c: 4, ox: 130, oy: 60 },
-                { type: 'scorpion', r: 1, c: 8, ox: 80, oy: 100 },
-                { type: 'butterfly', r: 1, c: 8, ox: 80, oy: 140 },
-                { type: 'bee', r: 2, c: 10, ox: 40, oy: 180 }
+                { type: 'boss', r: 1, c: 4, ox: 164, oy: 72 },
+                { type: 'butterfly', r: 2, c: 8, ox: 84, oy: 108 },
+                { type: 'bee', r: 2, c: 10, ox: 44, oy: 176 }
             ];
+            let order = 0;
             layouts.forEach(l => {
                 for (let i = 0; i < l.r; i++) {
                     for (let j = 0; j < l.c; j++) {
-                        enemies.push(new Enemy(l.ox + j * 40, l.oy + i * 35, l.type, (i * l.c + j) * 4));
+                        enemies.push(new Enemy(l.ox + j * 40, l.oy + i * 34, l.type, order++ * 8));
                     }
                 }
             });
@@ -641,17 +668,22 @@
             // Player bullets
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
-                b.y -= 8;
+                b.y -= 6.5;
                 let hitEnemy = false;
                 for (let ei = enemies.length - 1; ei >= 0; ei--) {
                     const e = enemies[ei];
                     if (Math.hypot(b.x - e.x, b.y - e.y) < 18) {
                         bullets.splice(i, 1);
                         hitEnemy = true;
-                        createExplosion(e.x, e.y, 15);
-                        enemies.splice(ei, 1);
-                        score += (e.type === 'boss' ? 400 : (e.type === 'scorpion' ? 200 : 100)); 
-                        playSfx(100, 'triangle', 0.15);
+                        e.hp = (e.hp || 1) - 1;
+                        if (e.hp > 0) {
+                            playSfx(240, 'square', 0.08);
+                        } else {
+                            createExplosion(e.x, e.y, 15);
+                            enemies.splice(ei, 1);
+                            score += (e.type === 'boss' ? 400 : (e.type === 'butterfly' || e.type === 'scorpion' ? 160 : 100));
+                            playSfx(100, 'triangle', 0.15);
+                        }
                         break;
                     }
                 }
@@ -680,7 +712,7 @@
             // Enemy bullets update & player collision
             for (let bi = enemyBullets.length - 1; bi >= 0; bi--) {
                 const eb = enemyBullets[bi];
-                eb.y += 4.5;
+                eb.y += 3.2;
                 if (eb.y > HEIGHT + 20) {
                     enemyBullets.splice(bi, 1);
                     continue;
@@ -728,16 +760,22 @@
                 if (player) player.draw();
                 enemies.forEach(e => e.draw());
 
-                // Player bullets
-                ctx.fillStyle = PALETTE.C;
-                bullets.forEach(b => ctx.fillRect(b.x - 1, b.y - 10, 2, 15));
-
-                // Enemy bullets
-                enemyBullets.forEach(b => {
+                // Player bullets (arcade blue tip + red tail)
+                bullets.forEach(b => {
+                    ctx.fillStyle = PALETTE.B;
+                    ctx.fillRect(b.x - 1, b.y - 12, 2, 4);
+                    ctx.fillRect(b.x - 3, b.y - 8, 6, 4);
                     ctx.fillStyle = PALETTE.R;
-                    ctx.fillRect(b.x - 1.5, b.y - 5, 3, 10);
-                    ctx.fillStyle = PALETTE.Y;
-                    ctx.fillRect(b.x - 0.5, b.y - 3, 1, 6);
+                    ctx.fillRect(b.x - 1, b.y - 4, 2, 8);
+                });
+
+                // Enemy bullets (arcade white shaft + red tip)
+                enemyBullets.forEach(b => {
+                    ctx.fillStyle = PALETTE.W;
+                    ctx.fillRect(b.x - 1, b.y - 8, 2, 8);
+                    ctx.fillStyle = PALETTE.R;
+                    ctx.fillRect(b.x - 3, b.y, 6, 2);
+                    ctx.fillRect(b.x - 1, b.y + 2, 2, 4);
                 });
 
                 // Particles
@@ -750,19 +788,45 @@
 
                 // Reserve ships HUD (bottom-left)
                 for (let i = 0; i < lives - 1; i++) {
-                    drawSprite(SPRITES.player, 20 + i * 20, HEIGHT - 16, 0, 1);
+                    drawSprite(SPRITES.player, 20 + i * 32, HEIGHT - 18, 0, 1.8);
                 }
-                // Stage badges (bottom-right)
+                // Stage badges (bottom-right, matching arcade red/white/blue chevron)
                 for (let i = 0; i < Math.min(level, 10); i++) {
-                    ctx.fillStyle = PALETTE.B;
-                    ctx.fillRect(WIDTH - 20 - i * 14, HEIGHT - 22, 10, 14);
-                    ctx.fillStyle = PALETTE.Y;
-                    ctx.fillRect(WIDTH - 18 - i * 14, HEIGHT - 20, 6, 4);
+                    const bx = WIDTH - 20 - i * 16, by = HEIGHT - 28;
+                    ctx.fillStyle = PALETTE.W;
+                    ctx.fillRect(bx, by, 14, 16);
+                    ctx.fillStyle = PALETTE.R;
+                    ctx.fillRect(bx, by + 2, 14, 4);
+                    ctx.fillRect(bx, by + 8, 14, 4);
+                    ctx.fillStyle = PALETTE.V;
+                    ctx.fillRect(bx + 2, by + 14, 10, 4);
+                    ctx.fillStyle = PALETTE.W;
+                    ctx.fillRect(bx + 6, by + 14, 2, 2);
+                    ctx.fillRect(bx + 4, by + 18, 6, 4);
                 }
             }
         }
 
-        function loop() { update(); draw(); requestAnimationFrame(loop); }
+        const ARCADE_FPS = 60.606;
+        const STEP_MS = 1000 / ARCADE_FPS;
+        let lastTime = 0, accumulator = 0;
+
+        function loop(timestamp) {
+            if (typeof timestamp === 'number') {
+                if (!lastTime) lastTime = timestamp;
+                const delta = Math.min(timestamp - lastTime, 100);
+                lastTime = timestamp;
+                accumulator += delta;
+                while (accumulator >= STEP_MS) {
+                    update();
+                    accumulator -= STEP_MS;
+                }
+            } else {
+                update();
+            }
+            draw();
+            requestAnimationFrame(loop);
+        }
 
         const keys = {};
         window.onkeydown = e => keys[e.code] = true;
