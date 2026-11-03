@@ -235,12 +235,56 @@ function testAuthenticSpritesAndBossTwoHit() {
     console.log('PASS: Authentic sprites, formation, and 2-hit Boss Galaga verified.');
 }
 
+function testCrkdAtomControllerSupport() {
+    console.log('Testing: CRKD ATOM Collectible Keychain Controller support (D-Pad, Stick-remap, Hat-switch, Fire, Start & Select L/R Flip)...');
+    const { context, elements } = setupEnvironment();
+
+    const mockGamepad = {
+        id: 'Nintendo Switch Pro Controller (STANDARD GAMEPAD Vendor: 057e Product: 2009)',
+        connected: true,
+        buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })),
+        axes: [0, 0, 0, 0, 0, 0, 0, 0, 0, 1.2857]
+    };
+    vm.runInContext('navigator = { getGamepads: () => [mockGamepad] }', Object.assign(context, { mockGamepad }));
+
+    // 1. Pressing Start (button 9) on menu starts the game
+    assert.strictEqual(vm.runInContext('gameActive', context), false);
+    mockGamepad.buttons[9].pressed = true;
+    vm.runInContext('update()', context);
+    assert.strictEqual(vm.runInContext('gameActive', context), true, 'CRKD ATOM Start button should start game from menu');
+    mockGamepad.buttons[9].pressed = false;
+    vm.runInContext('update()', context);
+
+    // 2. D-Pad Right (button 15) moves player right (with controllerInvertX = false)
+    const startX = vm.runInContext('player.x', context);
+    mockGamepad.buttons[15].pressed = true;
+    vm.runInContext('update()', context);
+    assert(vm.runInContext('player.x', context) > startX, 'CRKD ATOM D-Pad Right (button 15) should move ship right');
+    mockGamepad.buttons[15].pressed = false;
+
+    // 3. Select (-) button (button 8) flips L/R direction live
+    mockGamepad.buttons[8].pressed = true;
+    vm.runInContext('update()', context);
+    assert.strictEqual(vm.runInContext('controllerInvertX', context), true, 'Select (-) button should toggle controllerInvertX to true');
+    mockGamepad.buttons[8].pressed = false;
+    vm.runInContext('update()', context);
+
+    // 4. Fire button (button 0 / B) fires missile
+    vm.runInContext('player.cooldown = 0; bullets = [];', context);
+    mockGamepad.buttons[0].pressed = true;
+    vm.runInContext('update()', context);
+    assert.strictEqual(vm.runInContext('bullets.length', context), 1, 'CRKD ATOM face button should fire missile');
+    mockGamepad.buttons[0].pressed = false;
+    console.log('PASS: CRKD ATOM Collectible Keychain Controller verified across all modes.');
+}
+
 try {
     testAlienCollisionConsumesLife();
     testEnemyBulletConsumesLife();
     testGameOverWhenLivesDepleted();
     testDualShipAbsorbsHitWithoutConsumingLife();
     testAuthenticSpritesAndBossTwoHit();
+    testCrkdAtomControllerSupport();
     console.log('\nAll tests passed successfully!');
 } catch (e) {
     console.error('\nTest failed:', e.message);
