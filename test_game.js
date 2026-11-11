@@ -1,9 +1,10 @@
 const fs = require('fs');
 const vm = require('vm');
 const assert = require('assert');
+const path = require('path');
 
 function setupEnvironment() {
-    const html = fs.readFileSync('index.html', 'utf-8');
+    const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8');
     const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/);
     if (!scriptMatch) throw new Error('No script tag found');
     const scriptCode = scriptMatch[1];
@@ -278,15 +279,57 @@ function testCrkdAtomControllerSupport() {
     console.log('PASS: CRKD ATOM Collectible Keychain Controller verified across all modes.');
 }
 
-try {
-    testAlienCollisionConsumesLife();
-    testEnemyBulletConsumesLife();
-    testGameOverWhenLivesDepleted();
-    testDualShipAbsorbsHitWithoutConsumingLife();
-    testAuthenticSpritesAndBossTwoHit();
-    testCrkdAtomControllerSupport();
-    console.log('\nAll tests passed successfully!');
-} catch (e) {
-    console.error('\nTest failed:', e.message);
-    process.exit(1);
+async function testSeparatePwaIsolation() {
+    console.log('Testing: Standalone PWA manifest, scoped Service Worker cache isolation, and storage key isolation...');
+    const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8');
+    assert(html.includes('<link rel="manifest" href="manifest.json">'), 'Galaga index.html must link manifest.json');
+    assert(html.includes('name="apple-mobile-web-app-title" content="Galaga"'), 'Galaga index.html must set apple-mobile-web-app-title');
+    assert(html.includes('id="install-btn"'), 'Galaga index.html must include install-btn');
+    assert(html.includes("localStorage.getItem('galaga_invert_lr')"), 'Galaga must use isolated galaga_invert_lr localStorage key');
+    assert(!html.includes("localStorage.getItem('si_invert_lr')"), 'Galaga must not collide with Space Invaders si_invert_lr key');
+
+    const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, 'manifest.json'), 'utf-8'));
+    assert.strictEqual(manifest.id, '/galaga/', 'Galaga manifest must have unique id "/galaga/"');
+    assert.strictEqual(manifest.display, 'standalone', 'Galaga manifest must use standalone display');
+    assert.strictEqual(manifest.scope, './', 'Galaga manifest must scope to ./');
+    assert(manifest.icons.some(i => i.purpose === 'any') && manifest.icons.some(i => i.purpose === 'maskable'), 'Galaga manifest must provide separate any and maskable icons');
+
+    // Verify sw.js activate handler only deletes galaga-arcade-* caches and never deletes space-invaders-arcade-* caches
+    const swCode = fs.readFileSync(path.join(__dirname, 'sw.js'), 'utf-8');
+    const deletedCaches = [];
+    let activateHandler = null;
+    const swSandbox = {
+        self: {
+            addEventListener: (type, fn) => { if (type === 'activate') activateHandler = fn; },
+            skipWaiting: () => {},
+            clients: { claim: () => {} }
+        },
+        caches: {
+            keys: () => Promise.resolve(['galaga-arcade-v3', 'galaga-arcade-v4', 'space-invaders-arcade-v6']),
+            delete: (k) => { deletedCaches.push(k); return Promise.resolve(true); }
+        },
+        Promise
+    };
+    vm.runInNewContext(swCode, swSandbox);
+    let waitPromise = null;
+    activateHandler({ waitUntil: p => { waitPromise = p; } });
+    await waitPromise;
+    assert.deepStrictEqual(deletedCaches, ['galaga-arcade-v3'], 'Galaga SW must only delete old galaga-arcade-* caches and preserve Space Invaders cache');
+    console.log('PASS: Galaga PWA manifest, SW cache isolation, and storage key isolation verified.');
 }
+
+(async () => {
+    try {
+        testAlienCollisionConsumesLife();
+        testEnemyBulletConsumesLife();
+        testGameOverWhenLivesDepleted();
+        testDualShipAbsorbsHitWithoutConsumingLife();
+        testAuthenticSpritesAndBossTwoHit();
+        testCrkdAtomControllerSupport();
+        await testSeparatePwaIsolation();
+        console.log('\nAll tests passed successfully!');
+    } catch (e) {
+        console.error('\nTest failed:', e.message);
+        process.exit(1);
+    }
+})();

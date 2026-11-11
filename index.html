@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#080808">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Galaga">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <title>Galaga Arcade - Pixel Perfect Edition</title>
     <style>
         :root {
@@ -263,6 +271,7 @@
                 <p id="menu-sub" style="color:var(--arcade-cyan); letter-spacing:5px;">AUTHENTIC REPLICA</p>
                 <button id="start-btn">START GAME</button>
                 <div id="gamepad-status" style="margin-top:12px; font-size:clamp(0.68rem, 1.6vmin, 0.82rem); color:#c77dff; letter-spacing:1.5px; opacity:0.85;">🎮 CRKD ATOM / GAMEPAD: PRESS ANY BUTTON</div>
+                <button id="install-btn" style="display:none; margin-top:12px; background:none; border:2px solid var(--arcade-yellow); color:var(--arcade-yellow); padding:8px 20px; font-size:0.9rem; font-family:inherit; cursor:pointer;">📲 INSTALL APP</button>
             </div>
         </div>
         <div id="controls-wrapper">
@@ -850,8 +859,8 @@
         // Default to normal (false), or load saved preference from localStorage; toggle anytime via [⇄ L/R] or Select (-)
         let controllerInvertX = false;
         try {
-            if (typeof localStorage !== 'undefined' && localStorage.getItem('si_invert_lr') !== null) {
-                controllerInvertX = localStorage.getItem('si_invert_lr') === '1';
+            if (typeof localStorage !== 'undefined' && localStorage.getItem('galaga_invert_lr') !== null) {
+                controllerInvertX = localStorage.getItem('galaga_invert_lr') === '1';
             }
         } catch (e) {}
         let prevGamepadStartPressed = false;
@@ -881,7 +890,7 @@
             controllerInvertX = !controllerInvertX;
             try {
                 if (typeof localStorage !== 'undefined') {
-                    localStorage.setItem('si_invert_lr', controllerInvertX ? '1' : '0');
+                    localStorage.setItem('galaga_invert_lr', controllerInvertX ? '1' : '0');
                 }
             } catch (e) {}
             syncFlipButtonUI();
@@ -1150,6 +1159,31 @@
 
         document.getElementById('start-btn').onclick = startGame;
 
+        let deferredInstallPrompt = null;
+        if (typeof window !== 'undefined' && window.addEventListener) {
+            window.addEventListener('beforeinstallprompt', e => {
+                e.preventDefault();
+                deferredInstallPrompt = e;
+                const installBtn = document.getElementById('install-btn');
+                if (installBtn && installBtn.style) installBtn.style.display = 'inline-block';
+            });
+            window.addEventListener('appinstalled', () => {
+                deferredInstallPrompt = null;
+                const installBtn = document.getElementById('install-btn');
+                if (installBtn && installBtn.style) installBtn.style.display = 'none';
+            });
+        }
+        const installBtnEl = document.getElementById('install-btn');
+        if (installBtnEl) {
+            installBtnEl.onclick = async () => {
+                if (!deferredInstallPrompt) return;
+                deferredInstallPrompt.prompt();
+                await deferredInstallPrompt.userChoice;
+                deferredInstallPrompt = null;
+                if (installBtnEl.style) installBtnEl.style.display = 'none';
+            };
+        }
+
         const flipBtnEl = document.getElementById('flip-lr-btn');
         if (flipBtnEl) {
             flipBtnEl.onclick = e => {
@@ -1174,7 +1208,7 @@
             initStars();
             loop();
             if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./sw.js').then(reg => {
+                navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
                     if (reg && reg.update) reg.update();
                 }).catch(() => {});
             }
