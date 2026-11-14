@@ -279,6 +279,57 @@ function testCrkdAtomControllerSupport() {
     console.log('PASS: CRKD ATOM Collectible Keychain Controller verified across all modes.');
 }
 
+function testTractorBeamCaptureAndDualFighterRescue() {
+    console.log('Testing: Boss Galaga Tractor Beam capture and Dual Fighter rescue...');
+    const { context, elements, runTimeouts } = setupEnvironment();
+    elements['start-btn'].onclick();
+
+    // Place a single Boss Galaga entering tractor beam mode directly above the player
+    vm.runInContext(`
+        enemies = [new Enemy(WIDTH / 2, 72, 'boss', 0)];
+        const boss = enemies[0];
+        boss.x = player.x;
+        boss.y = HEIGHT - 188;
+        boss.tractorTargetX = player.x;
+        boss.state = 'tractor';
+        player.invulnerable = 0;
+    `, context);
+
+    // Advance frames until the tractor beam grows to full height and captures the player
+    for (let i = 0; i < 160; i++) {
+        vm.runInContext('update()', context);
+        if (vm.runInContext('enemies[0].hasCaptured', context)) break;
+    }
+    runTimeouts();
+
+    assert.strictEqual(vm.runInContext('enemies[0].hasCaptured', context), true, 'Boss Galaga should capture the player ship via tractor beam');
+    assert.strictEqual(vm.runInContext('tractorBeam', context), null, 'Tractor beam should retract/clear once capture completes');
+    assert.strictEqual(vm.runInContext('lives', context), 2, 'Capturing a ship should deduct 1 reserve life and spawn next fighter');
+    assert.strictEqual(vm.runInContext('player.captured', context), false, 'Replacement fighter should be active on playfield');
+
+    // Now shoot the Boss twice (2 hits to destroy Boss) to rescue the captured fighter
+    vm.runInContext(`
+        enemies[0].x = WIDTH / 2;
+        enemies[0].y = 140;
+        enemies[0].state = 'dive';
+        bullets.push({ x: WIDTH / 2, y: 142 });
+        bullets.push({ x: WIDTH / 2, y: 144 });
+        update();
+    `, context);
+
+    assert(vm.runInContext('capturedShip !== null', context), 'Destroying the Boss with a captured fighter must release capturedShip');
+
+    // Advance frames so capturedShip completes its celebration spin and docks with player
+    for (let i = 0; i < 180; i++) {
+        vm.runInContext('update()', context);
+        if (vm.runInContext('isDualShip', context)) break;
+    }
+
+    assert.strictEqual(vm.runInContext('isDualShip', context), true, 'Rescued fighter should dock with player to form Dual Fighter (isDualShip = true)');
+    assert.strictEqual(vm.runInContext('capturedShip', context), null, 'capturedShip should clear after docking');
+    console.log('PASS: Boss Galaga Tractor Beam capture and Dual Fighter rescue verified.');
+}
+
 async function testSeparatePwaIsolation() {
     console.log('Testing: Standalone PWA manifest, scoped Service Worker cache isolation, and storage key isolation...');
     const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8');
@@ -305,7 +356,7 @@ async function testSeparatePwaIsolation() {
             clients: { claim: () => {} }
         },
         caches: {
-            keys: () => Promise.resolve(['galaga-arcade-v3', 'galaga-arcade-v4', 'space-invaders-arcade-v6']),
+            keys: () => Promise.resolve(['galaga-arcade-v4', 'galaga-arcade-v5', 'space-invaders-arcade-v6']),
             delete: (k) => { deletedCaches.push(k); return Promise.resolve(true); }
         },
         Promise
@@ -314,7 +365,7 @@ async function testSeparatePwaIsolation() {
     let waitPromise = null;
     activateHandler({ waitUntil: p => { waitPromise = p; } });
     await waitPromise;
-    assert.deepStrictEqual(deletedCaches, ['galaga-arcade-v3'], 'Galaga SW must only delete old galaga-arcade-* caches and preserve Space Invaders cache');
+    assert.deepStrictEqual(deletedCaches, ['galaga-arcade-v4'], 'Galaga SW must only delete old galaga-arcade-* caches and preserve Space Invaders cache');
     console.log('PASS: Galaga PWA manifest, SW cache isolation, and storage key isolation verified.');
 }
 
@@ -326,6 +377,7 @@ async function testSeparatePwaIsolation() {
         testDualShipAbsorbsHitWithoutConsumingLife();
         testAuthenticSpritesAndBossTwoHit();
         testCrkdAtomControllerSupport();
+        testTractorBeamCaptureAndDualFighterRescue();
         await testSeparatePwaIsolation();
         console.log('\nAll tests passed successfully!');
     } catch (e) {

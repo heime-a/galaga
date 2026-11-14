@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'galaga-arcade-';
-const CACHE_NAME = `${CACHE_PREFIX}v4`;
+const CACHE_NAME = `${CACHE_PREFIX}v5`;
 const ASSETS = [
   './',
   './index.html',

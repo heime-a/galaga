@@ -339,6 +339,24 @@
                 "WW..RR.W.RR..WW.",
                 "W......W......W."
             ],
+            captured_player: [
+                ".......R........",
+                ".......R........",
+                ".......R........",
+                "......RRR.......",
+                "......RRR.......",
+                "...W..RRR..W....",
+                "...W..RRR..W....",
+                "...R.RRRRR.R....",
+                "W..RBRRWRRBR..W.",
+                "W..BRRWWWRRB..W.",
+                "R..RRRWRWRRR..R.",
+                "R.RRRRRRRRRRR.R.",
+                "RRRRRWRRWRRRRRR.",
+                "RRR.WWRRRWW.RRR.",
+                "RR..WW.R.WW..RR.",
+                "R......R......R."
+            ],
             bee: [
                 [
                     "................",
@@ -496,7 +514,8 @@
 
         let gameActive = false, score = 0, level = 1, lives = 3, frame = 0, highScore = 20000;
         let player = null, enemies = [], bullets = [], enemyBullets = [], stars = [], particles = [];
-        let tractorBeam = null, isDualShip = false;
+        let tractorBeam = null, capturedShip = null, isDualShip = false;
+        let statusBannerText = '', statusBannerColor = '#00FFFF', statusBannerTimer = 0;
 
         function initStars() {
             stars = [];
@@ -544,13 +563,22 @@
                 this.exploding = false;
                 this.explodeTimer = 0;
                 this.invulnerable = 0;
+                this.capturing = false;
+                this.captured = false;
+                this.captureAngle = 0;
             }
             update() {
+                if (this.captured) return;
+                if (this.capturing) {
+                    this.captureAngle += 0.28;
+                    return;
+                }
                 if (this.exploding) {
                     this.explodeTimer--;
                     if (this.explodeTimer <= 0) {
                         this.exploding = false;
                         this.x = WIDTH / 2;
+                        this.y = HEIGHT - 40;
                         this.invulnerable = 90; // ~1.5s invulnerability upon respawn
                     }
                     return;
@@ -578,11 +606,45 @@
                 if (this.cooldown > 0) this.cooldown--;
             }
             draw() {
-                if (this.exploding) return;
-                if (this.invulnerable > 0 && Math.floor(frame / 6) % 2 === 0) return;
-                drawSprite(SPRITES.player, this.x, this.y);
-                if (isDualShip) drawSprite(SPRITES.player, this.x + 28, this.y);
+                if (this.exploding || this.captured) return;
+                if (!this.capturing && this.invulnerable > 0 && Math.floor(frame / 6) % 2 === 0) return;
+                drawSprite(this.capturing && Math.floor(frame / 8) % 2 === 1 ? SPRITES.captured_player : SPRITES.player, this.x, this.y, this.capturing ? this.captureAngle : 0);
+                if (isDualShip && !this.capturing) drawSprite(SPRITES.player, this.x + 28, this.y);
             }
+        }
+
+        function completePlayerCapture(boss) {
+            if (!player) return;
+            player.capturing = false;
+            player.captured = true;
+            player.captureAngle = 0;
+            boss.hasCaptured = true;
+            tractorBeam = null;
+            boss.state = 'return';
+            statusBannerText = 'FIGHTER CAPTURED';
+            statusBannerColor = PALETTE.R;
+            statusBannerTimer = 95;
+            playSfx(220, 'sawtooth', 0.35);
+
+            setTimeout(() => {
+                if (!gameActive) return;
+                lives--;
+                const livesEl = document.getElementById('lives-display');
+                if (livesEl) livesEl.innerText = Math.max(0, lives);
+                if (lives > 0) {
+                    player = new Player();
+                    player.invulnerable = 90;
+                } else {
+                    gameActive = false;
+                    const titleEl = document.getElementById('menu-title');
+                    const subEl = document.getElementById('menu-sub');
+                    const btnEl = document.getElementById('start-btn');
+                    if (titleEl) titleEl.innerText = "GAME OVER";
+                    if (subEl) subEl.innerText = `SCORE: ${score}`;
+                    if (btnEl) btnEl.innerText = "PLAY AGAIN";
+                    document.getElementById('menu-overlay').style.display = 'flex';
+                }
+            }, 900);
         }
 
         class Enemy {
@@ -592,6 +654,8 @@
                 this.x = WIDTH / 2; this.y = -20;
                 this.state = 'wait'; this.timer = delay;
                 this.angle = 0; this.phase = 0;
+                this.hasCaptured = false;
+                this.tractorTargetX = WIDTH / 2;
             }
             update() {
                 if (this.state === 'wait') { if (this.timer-- <= 0) this.state = 'entry'; return; }
@@ -601,14 +665,106 @@
                     this.y = this.ty + Math.sin(this.phase * 4.5) * (110 * (1 - this.phase)) - (1 - this.phase) * 90;
                     this.angle = this.phase * 4.5 + Math.PI / 2;
                     if (this.phase >= 1) { this.state = 'formation'; this.angle = 0; }
+                } else if (this.state === 'return') {
+                    const fx = this.tx + Math.sin(frame * 0.018) * 20;
+                    const fy = this.ty + Math.cos(frame * 0.012) * 3;
+                    const dx = fx - this.x;
+                    const dy = fy - this.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist < 4) {
+                        this.x = fx;
+                        this.y = fy;
+                        this.angle = 0;
+                        this.state = 'formation';
+                    } else {
+                        this.x += (dx / dist) * 2.6;
+                        this.y += (dy / dist) * 2.6;
+                        this.angle = 0;
+                    }
                 } else if (this.state === 'formation') {
                     this.x = this.tx + Math.sin(frame * 0.018) * 20;
                     this.y = this.ty + Math.cos(frame * 0.012) * 3;
-                    const activeDives = enemies.filter(e => e.state === 'dive').length;
+                    const activeDives = enemies.filter(e => e.state === 'dive' || e.state === 'tractor').length;
                     const maxDives = Math.min(2 + Math.floor((level - 1) * 0.5), 5);
                     if (activeDives < maxDives && Math.random() < 0.00022 * (1 + (level - 1) * 0.25)) {
-                        this.state = 'dive';
-                        this.phase = 0;
+                        const canTractor = this.type === 'boss' &&
+                            !this.hasCaptured &&
+                            !isDualShip &&
+                            !capturedShip &&
+                            !tractorBeam &&
+                            player && !player.exploding && !player.capturing && !player.captured &&
+                            !enemies.some(e => e.hasCaptured || e.state === 'tractor');
+                        if (canTractor && Math.random() < 0.55) {
+                            this.state = 'tractor';
+                            this.phase = 0;
+                            this.tractorTargetX = Math.max(60, Math.min(WIDTH - 60, player.x));
+                        } else {
+                            this.state = 'dive';
+                            this.phase = 0;
+                        }
+                    }
+                } else if (this.state === 'tractor') {
+                    const hoverY = HEIGHT - 188; // y=324, 148px above player.y=472
+                    if (this.y < hoverY && !tractorBeam) {
+                        this.y += 2.2;
+                        const dx = this.tractorTargetX - this.x;
+                        this.x += Math.sign(dx) * Math.min(Math.abs(dx), 2.0);
+                        this.angle = Math.PI;
+                    } else {
+                        this.y = hoverY;
+                        this.angle = 0;
+                        if (!tractorBeam) {
+                            tractorBeam = {
+                                boss: this,
+                                x: this.x,
+                                y: this.y + 14,
+                                h: 0,
+                                maxH: 148,
+                                state: 'grow',
+                                timer: 165
+                            };
+                            playSfx(320, 'sine', 0.25);
+                        }
+                        if (tractorBeam && tractorBeam.boss === this) {
+                            tractorBeam.x = this.x;
+                            tractorBeam.y = this.y + 14;
+                            if (frame % 12 === 0) {
+                                playSfx(240 + (frame % 24 === 0 ? 80 : 0), 'sine', 0.08);
+                            }
+                            if (tractorBeam.state === 'grow') {
+                                tractorBeam.h = Math.min(tractorBeam.maxH, tractorBeam.h + 3.2);
+                                if (tractorBeam.h >= tractorBeam.maxH) {
+                                    tractorBeam.state = 'active';
+                                }
+                            } else if (tractorBeam.state === 'active') {
+                                tractorBeam.timer--;
+                                if (player && !player.exploding && !player.captured && !player.capturing && player.invulnerable <= 0 && !isDualShip) {
+                                    if (Math.abs(player.x - this.x) < 34) {
+                                        player.capturing = true;
+                                        tractorBeam.timer = Math.max(tractorBeam.timer, 120);
+                                        playSfx(440, 'triangle', 0.25);
+                                    }
+                                }
+                                if (player && player.capturing) {
+                                    player.x += (this.x - player.x) * 0.18;
+                                    player.y -= 1.9;
+                                    if (player.y <= this.y + 26) {
+                                        completePlayerCapture(this);
+                                        return;
+                                    }
+                                } else if (tractorBeam.timer <= 0) {
+                                    tractorBeam.state = 'shrink';
+                                }
+                            } else if (tractorBeam.state === 'shrink') {
+                                tractorBeam.h -= 3.5;
+                                if (tractorBeam.h <= 0) {
+                                    tractorBeam = null;
+                                    this.state = 'dive';
+                                }
+                            }
+                        } else {
+                            this.state = 'dive';
+                        }
                     }
                 } else if (this.state === 'dive') {
                     this.y += 2.1;
@@ -626,6 +782,11 @@
                 const spriteKey = (this.type === 'boss' && this.hp === 1) ? 'boss_hit' : this.type;
                 const frames = SPRITES[spriteKey] || SPRITES.bee;
                 drawSprite(frames[Math.floor(frame / 32) % 2], this.x, this.y, this.angle);
+                if (this.hasCaptured) {
+                    const capY = this.state === 'dive' ? this.y - 26 : this.y - 26;
+                    const capAngle = this.state === 'dive' ? Math.PI : 0;
+                    drawSprite(SPRITES.captured_player, this.x, capY, capAngle);
+                }
             }
         }
 
@@ -705,6 +866,21 @@
                             playSfx(240, 'square', 0.08);
                         } else {
                             createExplosion(e.x, e.y, 15);
+                            if (tractorBeam && tractorBeam.boss === e) {
+                                tractorBeam = null;
+                                if (player && player.capturing) {
+                                    player.capturing = false;
+                                    player.y = HEIGHT - 40;
+                                    player.captureAngle = 0;
+                                }
+                            }
+                            if (e.hasCaptured) {
+                                capturedShip = { x: e.x, y: e.y - 26, angle: 0, spinTimer: 32 };
+                                statusBannerText = 'FIGHTER RESCUED!';
+                                statusBannerColor = PALETTE.C;
+                                statusBannerTimer = 85;
+                                playSfx(660, 'square', 0.25);
+                            }
                             enemies.splice(ei, 1);
                             score += (e.type === 'boss' ? 400 : (e.type === 'butterfly' || e.type === 'scorpion' ? 160 : 100));
                             playSfx(100, 'triangle', 0.15);
@@ -717,11 +893,41 @@
                 }
             }
 
+            // Rescued fighter docking sequence -> Dual Fighter
+            if (capturedShip) {
+                if (capturedShip.spinTimer > 0) {
+                    capturedShip.spinTimer--;
+                    capturedShip.angle += 0.35;
+                } else {
+                    capturedShip.angle = 0;
+                    const targetX = (player && !player.exploding && !player.captured) ? Math.min(WIDTH - 48, player.x) + 28 : WIDTH / 2 + 14;
+                    const targetY = HEIGHT - 40;
+                    const dx = targetX - capturedShip.x;
+                    const dy = targetY - capturedShip.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist < 10 && player && !player.exploding && !player.captured) {
+                        player.x = Math.min(WIDTH - 48, player.x);
+                        isDualShip = true;
+                        capturedShip = null;
+                        score += 1000;
+                        statusBannerText = 'DUAL FIGHTER READY!';
+                        statusBannerColor = PALETTE.Y;
+                        statusBannerTimer = 85;
+                        playSfx(980, 'square', 0.4);
+                    } else {
+                        capturedShip.x += (dx / Math.max(1, dist)) * 3.0;
+                        capturedShip.y += (dy / Math.max(1, dist)) * 3.0;
+                    }
+                }
+            }
+
+            if (statusBannerTimer > 0) statusBannerTimer--;
+
             // Enemies update & player collision
             for (let ei = enemies.length - 1; ei >= 0; ei--) {
                 const e = enemies[ei];
                 e.update();
-                if (gameActive && player && !player.exploding && player.invulnerable <= 0) {
+                if (gameActive && player && !player.exploding && !player.capturing && !player.captured && player.invulnerable <= 0) {
                     const hitPrimary = Math.hypot(e.x - player.x, e.y - player.y) < 20;
                     const hitDual = isDualShip && Math.hypot(e.x - (player.x + 28), e.y - player.y) < 20;
                     if (hitPrimary || hitDual) {
@@ -742,7 +948,7 @@
                     enemyBullets.splice(bi, 1);
                     continue;
                 }
-                if (gameActive && player && !player.exploding && player.invulnerable <= 0) {
+                if (gameActive && player && !player.exploding && !player.capturing && !player.captured && player.invulnerable <= 0) {
                     const hitPrimary = Math.hypot(eb.x - player.x, eb.y - player.y) < 16;
                     const hitDual = isDualShip && Math.hypot(eb.x - (player.x + 28), eb.y - player.y) < 16;
                     if (hitPrimary || hitDual) {
@@ -764,6 +970,7 @@
             if (enemies.length === 0) {
                 level++;
                 enemyBullets = [];
+                tractorBeam = null;
                 spawnWave();
             }
 
@@ -782,8 +989,31 @@
             stars.forEach(s => { ctx.fillStyle = s.color; ctx.fillRect(s.x, s.y, 2, 2); });
 
             if (gameActive || player) {
+                // Authentic 1981 Namco striped tractor beam cone
+                if (tractorBeam && tractorBeam.h > 0) {
+                    const bands = Math.floor(tractorBeam.h / 8);
+                    const beamColors = [PALETTE.B, PALETTE.C, PALETTE.V, PALETTE.W];
+                    for (let b = 0; b < bands; b++) {
+                        const by = tractorBeam.y + b * 8;
+                        const progress = (b * 8) / tractorBeam.maxH;
+                        const halfW = 8 + progress * 34;
+                        ctx.fillStyle = beamColors[(b + Math.floor(frame / 4)) % beamColors.length];
+                        ctx.fillRect(tractorBeam.x - halfW, by, halfW * 2, 5);
+                    }
+                }
+
                 if (player) player.draw();
+                if (capturedShip) {
+                    drawSprite(SPRITES.player, capturedShip.x, capturedShip.y, capturedShip.angle || 0);
+                }
                 enemies.forEach(e => e.draw());
+
+                if (statusBannerTimer > 0 && statusBannerText && ctx.fillText) {
+                    ctx.fillStyle = statusBannerColor;
+                    ctx.font = 'bold 16px "Courier New", monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(statusBannerText, WIDTH / 2, HEIGHT / 2 + 24);
+                }
 
                 // Player bullets (arcade blue tip + red tail)
                 bullets.forEach(b => {
@@ -1139,6 +1369,9 @@
             level = 1;
             lives = 3;
             isDualShip = false;
+            tractorBeam = null;
+            capturedShip = null;
+            statusBannerTimer = 0;
             bullets = [];
             enemyBullets = [];
             particles = [];
