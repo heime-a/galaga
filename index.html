@@ -313,7 +313,7 @@
             <canvas id="gameCanvas"></canvas>
             <div id="menu-overlay">
                 <h1 id="menu-title" style="color:var(--arcade-red); font-style:italic; font-size:clamp(2.4rem, 7vmin, 3.5rem); margin:0; text-shadow:3px 3px 0 var(--arcade-blue);">GALAGA</h1>
-                <p id="menu-sub" style="color:var(--arcade-cyan); letter-spacing:4px; margin:8px 0 0;">1981 NAMCO ARCADE</p>
+                <p id="menu-sub" style="color:var(--arcade-cyan); letter-spacing:4px; margin:8px 0 0;">1981 NAMCO ARCADE &bull; v8</p>
                 <div id="results-panel">
                     <div style="color:var(--arcade-red); margin-bottom:6px; letter-spacing:2px;">-- RESULTS --</div>
                     <div class="res-row" style="color:var(--arcade-yellow);"><span>SHOTS FIRED</span><span id="res-shots">0</span></div>
@@ -3007,8 +3007,23 @@
             initStars();
             loop();
             if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
+                const hadController = Boolean(navigator.serviceWorker.controller);
+                let refreshing = false;
+                if (navigator.serviceWorker.addEventListener) {
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        if (hadController && !refreshing && typeof window !== 'undefined' && window.location && window.location.reload) {
+                            refreshing = true;
+                            window.location.reload();
+                        }
+                    });
+                }
+                navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' }).then(reg => {
                     if (reg && reg.update) reg.update();
+                    if (typeof document !== 'undefined' && document.addEventListener) {
+                        document.addEventListener('visibilitychange', () => {
+                            if (document.visibilityState === 'visible' && reg && reg.update) reg.update();
+                        });
+                    }
                 }).catch(() => {});
             }
         };

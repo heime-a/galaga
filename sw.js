@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'galaga-arcade-';
-const CACHE_NAME = `${CACHE_PREFIX}v7`;
+const CACHE_NAME = `${CACHE_PREFIX}v8`;
 const ASSETS = [
   './',
   './index.html',
@@ -11,7 +11,11 @@ const ASSETS = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache =>
-      Promise.all(ASSETS.map(url => fetch(url, { cache: 'no-store' }).then(res => cache.put(url, res))))
+      Promise.all(ASSETS.map(url =>
+        fetch(url, { cache: 'no-store' }).then(res => {
+          if (res && res.ok) return cache.put(url, res);
+        })
+      ))
     )
   );
   self.skipWaiting();
@@ -21,19 +25,26 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k.startsWith(CACHE_PREFIX) && k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
+  const reqUrl = event.request.url;
+  const isNav = event.request.mode === 'navigate';
+  // Fetch by URL string (not Request with mode:'navigate') so Chrome never throws TypeError with cache:'no-store'
   event.respondWith(
-    fetch(event.request, { cache: 'no-store' })
+    fetch(reqUrl, { cache: 'no-store' })
       .then(response => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        if (response && response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(isNav ? './index.html' : reqUrl, clone);
+          });
+        }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(isNav ? './index.html' : event.request).then(hit => hit || caches.match(event.request)))
   );
 });

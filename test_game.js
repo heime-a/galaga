@@ -371,7 +371,7 @@ async function testSeparatePwaIsolation() {
             clients: { claim: () => {} }
         },
         caches: {
-            keys: () => Promise.resolve(['galaga-arcade-v6', 'galaga-arcade-v7', 'space-invaders-arcade-v6']),
+            keys: () => Promise.resolve(['galaga-arcade-v7', 'galaga-arcade-v8', 'space-invaders-arcade-v6']),
             delete: (k) => { deletedCaches.push(k); return Promise.resolve(true); }
         },
         Promise
@@ -380,7 +380,8 @@ async function testSeparatePwaIsolation() {
     let waitPromise = null;
     activateHandler({ waitUntil: p => { waitPromise = p; } });
     await waitPromise;
-    assert.deepStrictEqual(deletedCaches, ['galaga-arcade-v6'], 'Galaga SW must only delete old galaga-arcade-* caches and preserve Space Invaders cache');
+    assert.deepStrictEqual(deletedCaches, ['galaga-arcade-v7'], 'Galaga SW must only delete old galaga-arcade-* caches and preserve Space Invaders cache');
+    assert(!swCode.includes('fetch(event.request, { cache:'), 'Galaga SW must fetch by URL string so navigate requests never throw TypeError in Chrome');
     console.log('PASS: Galaga PWA manifest, SW cache isolation, and storage key isolation verified.');
 }
 
