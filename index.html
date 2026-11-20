@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <title>Galaga Arcade - Pixel Perfect Edition</title>
+    <title>Galaga Arcade - 1981 Namco Edition</title>
     <style>
         :root {
             --arcade-black: #000000;
@@ -69,7 +69,6 @@
         #game-container {
             position: relative;
             aspect-ratio: 448 / 512;
-            /* Dynamically scale 7:8 arcade playfield to fit viewport without clipping */
             width: min(calc(100vw - 16px), calc((100vh - 16px) * (448 / 512)));
             width: min(calc(100dvw - 16px), calc((100dvh - 16px) * (448 / 512)));
             height: auto;
@@ -88,7 +87,7 @@
             display: block;
             position: absolute;
             top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
                         linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
             z-index: 25;
             background-size: 100% 2px, 2px 100%;
@@ -104,41 +103,91 @@
 
         #ui-layer {
             position: absolute;
-            top: 6px;
+            top: 4px;
             width: 100%;
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            padding: 0 15px;
+            grid-template-columns: 1fr 1.35fr 1fr;
+            padding: 0 12px;
             z-index: 30;
             font-weight: bold;
-            font-size: clamp(14px, 2.5vmin, 22px);
+            font-size: clamp(13px, 2.3vmin, 20px);
             text-align: center;
             pointer-events: none;
+            line-height: 1.15;
         }
 
         .red-text { color: var(--arcade-red); }
         .white-text { color: var(--arcade-white); }
-        
+
+        @keyframes arcadeBlink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0.15; }
+        }
+        .blink-active {
+            animation: arcadeBlink 0.55s steps(1, end) infinite;
+        }
+
+        .hud-controls {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 2px;
+        }
+
+        .hud-chip {
+            pointer-events: auto;
+            background: rgba(199, 125, 255, 0.16);
+            border: 1px solid #c77dff;
+            color: #c77dff;
+            font-family: inherit;
+            font-size: 9px;
+            font-weight: bold;
+            padding: 1px 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
         #menu-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.92);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 40;
             text-align: center;
+            padding: 16px;
+        }
+
+        #results-panel {
+            display: none;
+            margin-top: 12px;
+            padding: 10px 16px;
+            border: 1px solid rgba(0, 255, 255, 0.35);
+            background: rgba(0, 12, 24, 0.75);
+            width: min(86%, 320px);
+            font-size: clamp(12px, 2.2vmin, 16px);
+            font-weight: bold;
+            line-height: 1.6;
+        }
+
+        .res-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
         }
 
         #start-btn {
-            margin-top: 30px;
+            margin-top: 22px;
             background: none;
             border: 2px solid var(--arcade-cyan);
             color: var(--arcade-cyan);
             padding: 12px 28px;
-            font-size: clamp(1.1rem, 2.5vmin, 1.5rem);
+            font-size: clamp(1.05rem, 2.4vmin, 1.45rem);
             font-family: inherit;
+            font-weight: bold;
+            letter-spacing: 2px;
             cursor: pointer;
         }
 
@@ -201,18 +250,12 @@
             border-color: var(--arcade-red);
         }
 
-        /* Show touch controls on touch screens (including Z Fold 8 unfolded & folded) */
         @media (pointer: coarse), (hover: none), (max-width: 1024px) {
             #controls-wrapper {
                 display: flex;
             }
         }
 
-        /*
-         * When in portrait / squarish unfolded orientation (aspect ratio < 1.15, e.g. Z Fold 8
-         * unfolded portrait ~3:4 or cover screen), reserve vertical space at the bottom so the
-         * corner thumb controls never obscure the player ship or bottom HUD.
-         */
         @media (max-aspect-ratio: 115/100) and (pointer: coarse),
                (max-aspect-ratio: 115/100) and (max-width: 1024px) {
             #game-wrapper {
@@ -227,7 +270,6 @@
             }
         }
 
-        /* Compact button sizing for narrow cover display when folded */
         @media (max-width: 500px) {
             #game-container {
                 border: none;
@@ -257,21 +299,31 @@
     <div id="game-wrapper">
         <div id="game-container">
             <div id="ui-layer">
-                <div><div class="red-text">1UP</div><div id="score-display" class="white-text">00</div></div>
+                <div><div id="label-1up" class="red-text">1UP</div><div id="score-display" class="white-text">00</div></div>
                 <div>
                     <div class="red-text">HIGH SCORE</div>
                     <div id="high-score" class="white-text">20000</div>
-                    <button id="flip-lr-btn" style="pointer-events:auto; margin-top:2px; background:rgba(199,125,255,0.18); border:1px solid #c77dff; color:#c77dff; font-family:inherit; font-size:10px; font-weight:bold; padding:2px 6px; border-radius:4px; cursor:pointer;">⇄ L/R: NORMAL</button>
+                    <div class="hud-controls">
+                        <button id="flip-lr-btn" class="hud-chip">⇄ L/R: NORMAL</button>
+                        <button id="sound-btn" class="hud-chip" style="border-color:#00ffff; color:#00ffff; background:rgba(0,255,255,0.14);">🔊 SFX</button>
+                    </div>
                 </div>
                 <div><div class="red-text">LIVES</div><div id="lives-display" class="white-text">3</div></div>
             </div>
             <canvas id="gameCanvas"></canvas>
             <div id="menu-overlay">
-                <h1 id="menu-title" style="color:var(--arcade-red); font-style:italic; font-size:3.5rem; margin:0; text-shadow:3px 3px 0 var(--arcade-blue);">Galaga</h1>
-                <p id="menu-sub" style="color:var(--arcade-cyan); letter-spacing:5px;">AUTHENTIC REPLICA</p>
+                <h1 id="menu-title" style="color:var(--arcade-red); font-style:italic; font-size:clamp(2.4rem, 7vmin, 3.5rem); margin:0; text-shadow:3px 3px 0 var(--arcade-blue);">GALAGA</h1>
+                <p id="menu-sub" style="color:var(--arcade-cyan); letter-spacing:4px; margin:8px 0 0;">1981 NAMCO ARCADE</p>
+                <div id="results-panel">
+                    <div style="color:var(--arcade-red); margin-bottom:6px; letter-spacing:2px;">-- RESULTS --</div>
+                    <div class="res-row" style="color:var(--arcade-yellow);"><span>SHOTS FIRED</span><span id="res-shots">0</span></div>
+                    <div class="res-row" style="color:var(--arcade-yellow);"><span>NUMBER OF HITS</span><span id="res-hits">0</span></div>
+                    <div class="res-row" style="color:var(--arcade-cyan);"><span>HIT-MISS RATIO</span><span id="res-ratio">0.0%</span></div>
+                </div>
                 <button id="start-btn">START GAME</button>
-                <div id="gamepad-status" style="margin-top:12px; font-size:clamp(0.68rem, 1.6vmin, 0.82rem); color:#c77dff; letter-spacing:1.5px; opacity:0.85;">🎮 CRKD ATOM / GAMEPAD: PRESS ANY BUTTON</div>
-                <button id="install-btn" style="display:none; margin-top:12px; background:none; border:2px solid var(--arcade-yellow); color:var(--arcade-yellow); padding:8px 20px; font-size:0.9rem; font-family:inherit; cursor:pointer;">📲 INSTALL APP</button>
+                <div style="margin-top:10px; font-size:clamp(0.65rem, 1.5vmin, 0.78rem); color:var(--arcade-yellow); letter-spacing:1.2px; opacity:0.9;">1ST BONUS 20000 PTS &bull; EVERY 70000 PTS</div>
+                <div id="gamepad-status" style="margin-top:8px; font-size:clamp(0.66rem, 1.55vmin, 0.8rem); color:#c77dff; letter-spacing:1.5px; opacity:0.85;">🎮 CRKD ATOM / GAMEPAD: PRESS ANY BUTTON</div>
+                <button id="install-btn" style="display:none; margin-top:10px; background:none; border:2px solid var(--arcade-yellow); color:var(--arcade-yellow); padding:8px 20px; font-size:0.9rem; font-family:inherit; cursor:pointer;">📲 INSTALL APP</button>
             </div>
         </div>
         <div id="controls-wrapper">
@@ -288,23 +340,517 @@
         const ctx = canvas.getContext('2d');
         const WIDTH = 448, HEIGHT = 512, SCALE = 2;
 
+        // =========================================================================
+        // AUTHENTIC 1981 NAMCO GALAGA WSG (3-VOICE WAVETABLE ROM SOUND ENGINE)
+        // Exact 1981 arcade wavetable PROM, frequency table, and 24 sound scripts
+        // (0..23) synthesized at 62.5 kHz / 120 Hz tick and cached as AudioBuffers
+        // =========================================================================
         let audioCtx = null;
+        let soundMuted = false;
+
+        const GalagaSound = (() => {
+            function decodeB64(str) {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+                const clean = str.replace(/[^A-Za-z0-9+/=]/g, '');
+                let len = (clean.length * 3) >> 2;
+                if (clean.endsWith('==')) len -= 2;
+                else if (clean.endsWith('=')) len -= 1;
+                const out = new Uint8Array(len);
+                let p = 0;
+                for (let i = 0; i < clean.length; i += 4) {
+                    const a = chars.indexOf(clean[i]);
+                    const b = chars.indexOf(clean[i + 1]);
+                    const c = clean[i + 2] === '=' ? 0 : chars.indexOf(clean[i + 2]);
+                    const d = clean[i + 3] === '=' ? 0 : chars.indexOf(clean[i + 3]);
+                    const n = (a << 18) | (b << 12) | (c << 6) | d;
+                    if (p < len) out[p++] = (n >> 16) & 0xFF;
+                    if (p < len) out[p++] = (n >> 8) & 0xFF;
+                    if (p < len) out[p++] = n & 0xFF;
+                }
+                return out;
+            }
+            function decodeU16LE(str) {
+                const bytes = decodeB64(str);
+                const out = new Uint16Array(bytes.length >> 1);
+                for (let i = 0; i < out.length; i++) {
+                    out[i] = bytes[i * 2] | (bytes[i * 2 + 1] << 8);
+                }
+                return out;
+            }
+
+            const ROM_PROM = decodeB64("cHDgsHBwcKCQkODQoOCAwKCg4ODAwKDAsLDg0NCQwKDAcODA4MDgcNDQ4KDQ4NBw0NDggMCgwIDgcOCAoHDAsODg4IBwwLDQ4HDgoEDwoODQ0ODAINCA0NDQ4NAQgHCgwHDg4ACgUGCwsODQELBgUKCg4LAgcHBQkJDggEAggHBwcABAcICAkFBQACCw0JCQQHAAENCQoIAwMAAg4ECwQCBwADDQUJAQEBAAULBwgAAQcABwcCBgEAAAAHAwAFAwAHAAcBAwQGAAAABQAIBAcBBwADAQUDBwEBAAIDAQIEAgcAAQcDBAIDAwACDgYGAgQHAAQHAwgEBQUABwABCQcA==");
+            const ROM_FREQ = decodeU16LE("UIEAiSaRyJnsop2s4LbAwUXNetlp5hz0AAA=");
+            const ROM_META = decodeB64("AAEAAQEBAgEBAwEBBAEBBQEABgECIAMACgMADQMABwMAEwMAFgMAGQMAHAMAHwECLAMAEAMAIwEAJAEAJQMAKAEAKQMA");
+            const ROM_WOFF = decodeU16LE("AABXADUAAQChALsAzwAVAiUCNQLfAfEBAwJFAokCzQL5Aj0DgQPjAC8BeQGfBC0FewWpAbsBzQHjAOMA4wBLBK0D4wMZBDcESwSvBSMGnwahBSMFcQWXBeEGHQdZBw==");
+            const ROM_MASK = decodeB64("BAICAgIEBAoHDAsECg0EAQQMAgYFAgM=");
+            const ROM_WROM = decodeB64("/wAABnEBcgFzAXUBdAFzAXIBcQFwAYsBigEMBIYBhwGIAYkBigGJAYgBhwGGAYUBhAGDAf8AAASIAYoBcAFxAXMBdQF3AXgBDAZ0AXMBcgFxAXABiwH/AAAHiQGKAYsBDAFwAXEBcgEMAXMBdAF1AQwDiwFwAXEBDAFyAXMBdAEMAXUBdgF3AQwDcQFyAXMBDAF0AXUBdgEMAXcBeAF5Af8AAAVxAXIBcwEMAXQBdQF2AQwBdwF4AXkB/wAABGEBegFgAXgBegF2AXgBdQH/AAAAdgF5AWABYwFmAWMBYAF5Af8AAAeBCIEBhgOICYsDigmGA4gJcwNxCYYDiAmLA4oJhgNxCXUDdgl0A3IJcQOLCYkDiAmEA3QJdgN0CXEDcwSLBIgEcQSKBIgEDBD/AAAGigmBA4gJgwOGCYEDgwmFA4oJgQOICYMDhgmBA4gJcQNyCXEDiwmJA4gJhgOECYgDiQmLA4kJhgOLBIgEgwSIBIUEgwQMEP8AAAeBDIMJhgOFDIEMhgyICYsDigyIDIkMiAmGA4QMiQx0DHEJiQOIDHEJigMMEP8CAAN4AgwBeAF5AXsBYQMMA/8CAANzAgwBcwF0AXYBeAMMAv8CAANwAgwBcAFxAXMBdQMMA/8BAAR4AXoBYwF4AXoBYwFlA/8BAAVzAXgBegFzAXgBegFgA/8BAAeKAXMBeAGKAXMBeAF6A/8BBgR6AXgBegFhAWUBaAP/AQYEeAF1AXgBegFhAWUD/wEGBHUBcQF1AXgBegFgA/8CBAN6AXYBeAF1AXYBcwF1AXIBcwGKAYsBiAGGAYUBgwGCAYMBhgGFAYgBhgGKAYgBiwGKAXMBcgFzAXUBigFwAXIB/wIEA3YBcwF1AXIBcwFwAXIBigGLAYYBiAGFAYMBggGAAZoBmgGDAYIBhQGDAYYBhQGIAYYBigGIAYsBigGIAYYBhQH/AhADkwKaAoMDmgGYAZYBlQGTApUDlgKYApoCmwKaApgBlgGVAZIBkwGVAf8CBAN6AXcBeAF1AXcBcwF1AXIBcwGKAYABiAGHAYUBgwGCAYMBhwGFAYgBhwGKAYgBgAGKAXMBcgFzAXUBigFwAXIB/wIEA3cBcwF1AXIBcwFwAXIBigGAAYcBiAGFAYMBggGAAZoBmgGDAYIBhQGDAYcBhQGIAYcBigGIAYABigGIAYcBhQH/AhADkwKaAoMDmgGYAZcBlQGTApUDlwKYApoCkAKaApgBlwGVAZIBkwGVAf8CBAN6AXYBeAF1AXYBcwF1AXIBcwGKAYoBiAGGAYUBgwGCAYMBhQGGAYgBhgGKAXABcgFzBP8CBAN2AXMBdQFyAXMBcAFyAYoBigGGAYYBhQGDAYIBgAGaAZoBiwGAAYIBgwGFAYYBiAGKBP8CEANzAnUCdgJ1AnMCcgJwAnICcwKLAooChgKDBP8AAARxBHMEcQRzBHYEeAR2BHgE/wAABlYBVQFUAVMBUgFRAVABawFqAWkBaAFnAWYBZQFkAWMBYgFhAWABewF6AXkBeAF3AXYBdQF0AXMBcgFxAXABiwGKAYkBiAGHAYYBhQGEAYMB/wIEBWABeAF1AXEBYAF4AXUBcQFgAXgBdQFxAWABeAF1AXEBYAF4AXUBcQFgAXgBdQFxAWABDAF4AXoBdQF4AXMBdQFhAXoBdgFzAWEBegF2AXMBYQF6AXYBcwFhAXoBdgFzAWEBeQF2AXMBYQF5AXYBcwFhAQwBeQFhAXgBeQF1AXgB/wICBWABYAFgAf8CBAVhAngCeAJhAngCeAJhAngCeAJhAngCeAJhAngCegJ1AmMCegJ6AmMCegJ6AmMCegJ5AmMCeQJ5AmMCeQJ2AnMC/wICBXgBeAF4Af8CEAWFBoUGhQaFBoUEhQSGBoYGhgaGBoYEhgT/AgQFgQGBAYEB/wIAB2UBDAFhAQwBYwH/AgAFegUMAXoBDAF6AwwBeAcMAXgHDAF4AwwBewUMAXsBDAF7AwwBegcMAXoHDAF6AwwBewEMAXsBDAN7AQwBewMMAWEBDAFhAQwDYQEMAWEDDAFhAwwBYQMMAWMBDAFjAQwDYwEMAWMDDAFjAwwBYwMMAf8CAAOGAooCcQJ2AoYCigJxAnYChgKKAnECdgKGAooCcQJ2AoYCigJxAnYChgKKAnECdgKGAooCcQJ2AoYCigJxAnYCdwEMAXcBDAN3AQwBdwMMAWkBDAFpAQwDaQEMAWkDDAFpAwwBaQMMAYsCcwJ2AnsCewJ2AnMCiwL/AAAChgiBCIYIgQiGCIEIhgiBCIIBDAGCAQwDggEMAYIDDAGEAQwBhAEMA4QBDAGEAwwBhAMMAYQDDAF7CHYEiwT/AAwFdQxxDIoMhgwMCXUDcQmKA4YEigRxBIkEcARzBIsMcwx2DHgMDAl5A3YJcgOLBIkEhgRyBIkEdgT/AAwFcQyKDIYMhQwMCYEDigmGA4UEhgSKBIYEiQSLBIgMiwxzDHYMDAl2A3IJiwOKBIYEggSLBIkEggT/AAADdRh1GHUYcQx1DHMYcxhyGHYMeAz/+v8=");
+
+            const PROM4 = new Uint8Array(256);
+            for (let i = 0; i < 256; i++) PROM4[i] = (ROM_PROM[i] >> 4) & 0x0F;
+
+            const S00_STEP_UP = [0x0130, 0x0168, 0x0136, 0x01A8, 0x0168, 0x0200, 0x01AC, 0x0208];
+            const S00_STEP_DN = [0xFE00, 0xFE58, 0xFE08, 0xFE98, 0xFE58, 0xFED0, 0xFE98, 0xFED6];
+            const S00_BASE_UP = [0x5B00, 0x6C00, 0x5B00, 0x7E00, 0x6C00, 0x9700, 0x8100, 0x9900];
+            const S00_BASE_DN = [0xD900, 0xB600, 0xD900, 0x9700, 0xB600, 0x7E00, 0x9900, 0x8100];
+            const S23_GAIN = [255,254,252,251,249,247,246,244,242,241,239,238,236,234,233,231,229,228,226,224,223,221,220,218,216,215,213,211,210,208,207,205,203,202,200,198,197,195,193,192,190,189,187,185,184,182,180,179,177,176,174,172,171,169,167,166,164,162,161,159,158,156,154,153,151,149,148,146,145,143,141,140,138,136,135,133,131,130,128,127,125,123,122,120,118,117,115,114,112,110,109,107,105,104,102,100,99,97,96,94,92,91,89,87,86,84,83,81,79,78,76,74,73,71,69,68,66,65,63,61,60,58,56,55,53,51,50,48,46,44,43,41,39,37,36,34,32,30,29,27,25,23,22,20,18,16,15,13,11,9,8,6,4,2];
+
+            // Render any authentic 1981 Galaga sound (0..23) through the exact 62.5 kHz WSG engine
+            function renderPCM(sid, outRate = 44100) {
+                const states = new Uint8Array(47);
+                const positions = new Uint8Array(47);
+                const acc16 = new Uint16Array(3);
+                const inc16 = new Uint16Array(3);
+                const volRaw = new Uint8Array(3);
+                const waveSel = new Uint8Array(3);
+                const in_sound = new Uint8Array(24);
+                let s05_cnt = 0, s05_vol = 0x0C, s06_cnt = 0, s06_ws = 0;
+                let s10_fading = false, s10_fadeVol1 = 0;
+                let s00_dir = 1, s00_seg = 0, s00_tick = 0, s00_acc = 0, s00_step = 0, s00_cycles = 0;
+                let s23_tick = 0, s23_env = 0, s23_lfsr = 0xACE1, s23_wh = 0, s23_nd = 0, s23_bx = 0, s23_lpy = 0;
+
+                function s00_load() {
+                    const i = s00_seg & 7;
+                    if (s00_dir === 1) {
+                        s00_step = S00_STEP_UP[i];
+                        s00_acc = (S00_BASE_UP[i] + s00_step) & 0xFFFF;
+                    } else {
+                        s00_step = S00_STEP_DN[i];
+                        s00_acc = (S00_BASE_DN[i] + s00_step) & 0xFFFF;
+                    }
+                }
+                function getMeta(s) {
+                    let baseOffset = ROM_META[s * 3];
+                    let numVoices = ROM_META[s * 3 + 1];
+                    let voiceStart = ROM_META[s * 3 + 2];
+                    if (s === 0x0E) {
+                        if (positions[0x1C] === 0) numVoices = 1;
+                        else if (positions[0x1C] === 1) numVoices = 2;
+                        else numVoices = (positions[0x1D] !== 0) ? 2 : 3;
+                    }
+                    return { baseOffset, numVoices, voiceStart };
+                }
+                function initSnd(off, nv) {
+                    for (let i = 0; i < nv; i++) {
+                        if (off + i < 47) { states[off + i] = 0; positions[off + i] = 0; }
+                    }
+                }
+                function processChunk(off, voice, s) {
+                    states[off] = (states[off] + 1) & 0xFF;
+                    const wb = ROM_WOFF[off];
+                    const data0 = ROM_WROM[wb], data1 = ROM_WROM[wb + 1], ws = ROM_WROM[wb + 2];
+                    const pos = positions[off];
+                    const db = ROM_WROM[wb + 3 + pos];
+                    const dn = ROM_WROM[wb + 3 + pos + 1];
+                    if (db === 0xFF) {
+                        volRaw[voice] = 0; inc16[voice] = 0; acc16[voice] = 0;
+                        return true;
+                    }
+                    let bf = ROM_FREQ[db & 0x0F] >>> ((db >> 4) & 0x0F);
+                    let inc = Math.floor((bf * 393) / 256);
+                    if (inc > 0xFFFF) inc = 0xFFFF;
+                    inc16[voice] = inc;
+                    let v;
+                    if (db === 0x0C) {
+                        v = 0;
+                    } else {
+                        const w = (db - 0x0C) & 0xFF;
+                        const m0 = data0 & w;
+                        let fall = false;
+                        if (m0 !== 0) {
+                            const st = states[off];
+                            if (m0 === 1) { if (st < 6) v = (st + st) & 0xFF; else fall = true; }
+                            else { if (st < 6) v = (~st) & 0xFF; else fall = true; }
+                        } else {
+                            fall = true;
+                        }
+                        if (fall) {
+                            const m1 = data1 & w;
+                            if (m1 !== 0) {
+                                const st = states[off];
+                                if (st <= 0x0A) v = 0x0A;
+                                else if (st >= 0x15) v = 0;
+                                else v = (0x15 - st) & 0xFF;
+                            } else {
+                                v = 0x0A;
+                            }
+                        }
+                    }
+                    if (s === 10 && voice === 1 && s10_fading) {
+                        if (s10_fadeVol1 > 0) s10_fadeVol1--;
+                        v = s10_fadeVol1 & 0x0F;
+                    }
+                    if (s === 10) v = v > 5 ? v - 5 : 0;
+                    volRaw[voice] = v;
+                    waveSel[voice] = ws & 7;
+                    if ((v & 0x0F) === 0) { inc16[voice] = 0; acc16[voice] = 0; }
+                    let m = ROM_MASK[s], d = dn, acc = 0;
+                    for (let i = 0; i < 8; i++) {
+                        if (m & 1) acc = (acc + d) & 0xFF;
+                        d = (d << 1) & 0xFF;
+                        m >>= 1;
+                    }
+                    if (states[off] === acc) {
+                        states[off] = 0;
+                        positions[off] = (positions[off] + 2) & 0xFF;
+                    }
+                    return false;
+                }
+
+                const chunks = [];
+                let finished = false, ticks = 0, bisLoops = 0;
+                const maxTicks = 960; // 8s safety ceiling
+                const stepRatio = 62500 / outRate;
+                let phaseFrac = 0;
+                let lpState = 0;
+                const lpAlpha = 0.34; // Namco RC output filter (~3.4 kHz @ 62.5 kHz)
+
+                if (sid === 23) { s23_env = 255; }
+                else if (sid === 0) { s00_load(); }
+
+                while (!finished && ticks < maxTicks) {
+                    ticks++;
+                    if (sid === 0) {
+                        if (s00_tick !== 0) s00_acc = (s00_acc + s00_step) & 0xFFFF;
+                        const H = (s00_acc >> 8) & 0xFF;
+                        waveSel[0] = 0; volRaw[0] = 0x0A; inc16[0] = ((H << 8) >> 7) & 0xFFFF;
+                        s00_tick++;
+                        if (s00_tick >= 34) {
+                            s00_tick = 0; s00_seg++;
+                            if (s00_seg >= 8) {
+                                s00_seg = 0;
+                                s00_dir = s00_dir === 1 ? 0xFF : 1;
+                                s00_cycles++;
+                                if (s00_cycles >= 2) finished = true;
+                            }
+                            s00_load();
+                        }
+                    } else if (sid === 23) {
+                        if (s23_tick < S23_GAIN.length) s23_env = S23_GAIN[s23_tick++];
+                        else { s23_env = 0; finished = true; }
+                    } else {
+                        if (in_sound[sid] === 0) {
+                            in_sound[sid] = 1;
+                            if (sid === 0x0E) { positions[0x1C] = positions[0x1D] = 0; states[0x1C] = states[0x1D] = 0; }
+                            const m = getMeta(sid);
+                            initSnd(m.baseOffset, m.numVoices);
+                        }
+                        const m = getMeta(sid);
+                        let done = false;
+                        for (let i = 0; i < m.numVoices; i++) {
+                            if (m.voiceStart + i < 3) done = processChunk(m.baseOffset + i, m.voiceStart + i, sid) || done;
+                        }
+                        if (sid === 0x0E) {
+                            const used = [false, false, false];
+                            for (let i = 0; i < m.numVoices; i++) if (m.voiceStart + i < 3) used[m.voiceStart + i] = true;
+                            volRaw[2] = used[2] ? 9 : 0; volRaw[1] = used[1] ? 6 : 0;
+                            for (let v = 0; v < 3; v++) if (!used[v]) { volRaw[v] = 0; inc16[v] = 0; }
+                        }
+                        if (sid === 0x05) {
+                            s05_cnt++;
+                            if (s05_cnt > 6) { s05_cnt = 0; s05_vol = s05_vol < 4 ? 0x0C : s05_vol - 1; }
+                            volRaw[2] = s05_vol;
+                        }
+                        if (sid === 0x06) {
+                            s06_cnt++;
+                            if (s06_cnt === 0x1C) { s06_cnt = 0; s06_ws = (s06_ws + 1) & 7; }
+                            waveSel[2] = s06_ws;
+                        }
+                        if (sid === 10) {
+                            const env = Math.min(volRaw[0] & 0x0F, volRaw[2] & 0x0F);
+                            if ((volRaw[1] & 0x0F) > env) volRaw[1] = env;
+                            if (!s10_fading && (volRaw[0] & 0x0F) === 0 && (volRaw[2] & 0x0F) === 0) {
+                                s10_fading = true; s10_fadeVol1 = volRaw[1] & 0x0F;
+                            }
+                        }
+                        if (done) {
+                            in_sound[sid] = 0;
+                            if (sid === 5 || sid === 6) {
+                                bisLoops++;
+                                if (bisLoops >= (sid === 5 ? 10 : 8)) finished = true;
+                            } else {
+                                finished = true;
+                            }
+                        }
+                    }
+
+                    // 521 hardware samples per 120 Hz tick (62500 / 521 ≈ 119.96 Hz)
+                    for (let s = 0; s < 521; s++) {
+                        let mix = 0;
+                        if (sid === 23) {
+                            if (++s23_nd >= 16) {
+                                s23_nd = 0;
+                                const lsb = s23_lfsr & 1; s23_lfsr >>>= 1; if (lsb) s23_lfsr ^= 0xB400;
+                                s23_wh = (s23_lfsr & 0x80) ? ((s23_lfsr & 0xFF) - 256) : (s23_lfsr & 0xFF);
+                            }
+                            s23_bx = s23_bx + s23_wh - (s23_bx >> 4);
+                            s23_lpy += (s23_bx - s23_lpy) >> 5;
+                            const y8 = s23_lpy > 127 ? 127 : (s23_lpy < -128 ? -128 : s23_lpy);
+                            mix = (((y8 * s23_env) >> 8) * 175) >> 6;
+                        } else {
+                            for (let v = 0; v < 3; v++) {
+                                const vl = volRaw[v] & 0x0F;
+                                if (!vl) continue;
+                                acc16[v] = (acc16[v] + inc16[v]) & 0xFFFF;
+                                const idx = ((acc16[v] >> 8) & 0xF8) | waveSel[v];
+                                mix += (PROM4[idx] - 8) * vl;
+                            }
+                        }
+                        if (mix > 192) mix = 192;
+                        else if (mix < -192) mix = -192;
+                        // 6-bit DAC quantization + Namco RC low-pass filter
+                        const q = Math.round(((mix + 192) * 63) / 384) / 31.5 - 1.0;
+                        lpState += (q - lpState) * lpAlpha;
+                        phaseFrac += 1;
+                        if (phaseFrac >= stepRatio) {
+                            phaseFrac -= stepRatio;
+                            chunks.push(lpState);
+                        }
+                    }
+                }
+                return new Float32Array(chunks);
+            }
+
+            const bufferCache = new Array(24).fill(null);
+            let musicSource = null;
+            let musicUntil = 0;
+            let ambienceSource = null;
+            let ambienceGain = null;
+            let beamSource = null;
+            let beamMode = 0; // 0=off, 5=tractor, 6=capture
+            let lastDiveAt = 0;
+
+            function ensureCtx() {
+                try {
+                    if (!audioCtx && typeof window !== 'undefined') {
+                        const AC = window.AudioContext || window.webkitAudioContext;
+                        if (AC) audioCtx = new AC();
+                    }
+                    if (!audioCtx) return null;
+                    if (audioCtx.state === 'suspended' && audioCtx.resume) audioCtx.resume();
+                    return audioCtx;
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            function getBuffer(c, sid) {
+                if (bufferCache[sid]) return bufferCache[sid];
+                if (!c || !c.createBuffer) return null;
+                const sr = c.sampleRate || 44100;
+                const pcm = renderPCM(sid, sr);
+                const buf = c.createBuffer(1, Math.max(1, pcm.length), sr);
+                const ch = buf.getChannelData(0);
+                ch.set(pcm);
+                bufferCache[sid] = buf;
+                return buf;
+            }
+
+            function stopMusic() {
+                if (musicSource) {
+                    try { musicSource.stop(); } catch (e) {}
+                    musicSource = null;
+                }
+                musicUntil = 0;
+            }
+
+            function stopAmbience() {
+                if (ambienceSource) {
+                    try { ambienceSource.stop(); } catch (e) {}
+                    ambienceSource = null;
+                    ambienceGain = null;
+                }
+            }
+
+            function stopBeam() {
+                if (beamSource) {
+                    try { beamSource.stop(); } catch (e) {}
+                    beamSource = null;
+                }
+                beamMode = 0;
+            }
+
+            function stopAll() {
+                stopMusic();
+                stopAmbience();
+                stopBeam();
+            }
+
+            function playOneShot(sid, vol = 0.42, isMusic = false, playbackRate = 1.0) {
+                if (soundMuted) return;
+                const c = ensureCtx();
+                if (!c) return;
+                try {
+                    if (!c.createBuffer || !c.createBufferSource) {
+                        // Minimal fallback for stripped headless unit-test AudioContext mocks
+                        if (c.createOscillator && c.createGain) {
+                            const osc = c.createOscillator();
+                            const gain = c.createGain();
+                            osc.type = 'square';
+                            osc.frequency.setValueAtTime(440, c.currentTime);
+                            gain.gain.setValueAtTime(0.05, c.currentTime);
+                            osc.connect(gain); gain.connect(c.destination);
+                            osc.start(); osc.stop(c.currentTime + 0.05);
+                        }
+                        return;
+                    }
+                    const buf = getBuffer(c, sid);
+                    if (!buf) return;
+                    if (isMusic) {
+                        stopMusic();
+                        stopAmbience();
+                    }
+                    const src = c.createBufferSource();
+                    src.buffer = buf;
+                    if (playbackRate !== 1.0 && src.playbackRate) src.playbackRate.value = playbackRate;
+                    const gain = c.createGain();
+                    gain.gain.setValueAtTime(vol, c.currentTime);
+                    src.connect(gain);
+                    gain.connect(c.destination);
+                    src.start(c.currentTime);
+                    if (isMusic) {
+                        musicSource = src;
+                        musicUntil = c.currentTime + (buf.duration / playbackRate);
+                        src.onended = () => { if (musicSource === src) { musicSource = null; musicUntil = 0; } };
+                    }
+                } catch (e) {}
+            }
+
+            function syncLoops(wantAmbience, fastAmbience, wantBeamMode) {
+                if (soundMuted) {
+                    stopAmbience();
+                    stopBeam();
+                    return;
+                }
+                const c = audioCtx;
+                if (!c || !c.createBuffer || !c.createBufferSource) return;
+
+                // Manage Tractor Beam (5) & Capture (6) seamless loops
+                if (wantBeamMode !== beamMode) {
+                    stopBeam();
+                    if (wantBeamMode === 5 || wantBeamMode === 6) {
+                        try {
+                            const buf = getBuffer(c, wantBeamMode);
+                            if (buf) {
+                                const src = c.createBufferSource();
+                                src.buffer = buf;
+                                src.loop = true;
+                                const gain = c.createGain();
+                                gain.gain.setValueAtTime(0.36, c.currentTime);
+                                src.connect(gain);
+                                gain.connect(c.destination);
+                                src.start(c.currentTime);
+                                beamSource = src;
+                                beamMode = wantBeamMode;
+                            }
+                        } catch (e) {}
+                    }
+                }
+
+                // Manage continuous Galaga Ambience (0) loop when no music or tractor beam is playing
+                const musicPlaying = musicSource !== null && c.currentTime < musicUntil;
+                const shouldHum = wantAmbience && !musicPlaying && beamMode === 0;
+                if (shouldHum && !ambienceSource) {
+                    try {
+                        const buf = getBuffer(c, 0);
+                        if (buf) {
+                            const src = c.createBufferSource();
+                            src.buffer = buf;
+                            src.loop = true;
+                            if (src.playbackRate) src.playbackRate.value = fastAmbience ? 1.18 : 1.0;
+                            const gain = c.createGain();
+                            gain.gain.setValueAtTime(0.24, c.currentTime);
+                            src.connect(gain);
+                            gain.connect(c.destination);
+                            src.start(c.currentTime);
+                            ambienceSource = src;
+                            ambienceGain = gain;
+                        }
+                    } catch (e) {}
+                } else if (!shouldHum && ambienceSource) {
+                    stopAmbience();
+                } else if (shouldHum && ambienceSource && ambienceSource.playbackRate) {
+                    ambienceSource.playbackRate.value = fastAmbience ? 1.18 : 1.0;
+                }
+            }
+
+            return {
+                unlock: ensureCtx,
+                renderPCM,
+                stopMusic,
+                stopAll,
+                syncLoops,
+                playId: (sid, vol = 0.40, isMusic = false) => playOneShot(sid, vol, isMusic),
+                playCoin: () => playOneShot(8, 0.36, false),
+                playStartTheme: () => playOneShot(11, 0.36, true),
+                playChallengingStart: () => playOneShot(13, 0.36, true),
+                playChallengingClear: (isPerfect) => playOneShot(isPerfect ? 20 : 14, 0.36, true),
+                playCapturedTheme: () => { stopBeam(); playOneShot(9, 0.38, true); },
+                playRescuedTheme: () => { stopBeam(); playOneShot(17, 0.38, true); },
+                playExtraLife: () => playOneShot(10, 0.42, false),
+                playStageFlagTick: () => playOneShot(21, 0.36, false),
+                playShot: () => playOneShot(15, 0.44, false),
+                playDive: () => {
+                    const now = audioCtx ? audioCtx.currentTime : 0;
+                    if (audioCtx && (now - lastDiveAt) < 0.25) return;
+                    lastDiveAt = now;
+                    playOneShot(19, 0.36, false);
+                },
+                playBossHit1: () => playOneShot(1, 0.46, false),
+                playEnemyDestroy: (type) => {
+                    if (type === 'boss') {
+                        playOneShot(4, 0.48, false);
+                        playOneShot(23, 0.34, false, 1.45);
+                    } else if (type === 'butterfly' || type === 'scorpion' || type === 'bosconian' || type === 'galaxian') {
+                        playOneShot(2, 0.44, false);
+                    } else {
+                        playOneShot(3, 0.44, false);
+                    }
+                },
+                playPlayerExplosion: () => {
+                    stopAmbience();
+                    stopBeam();
+                    playOneShot(7, 0.38, true);
+                    playOneShot(23, 0.50, false);
+                },
+                playTractorBeamTick: () => {},
+                playCaptureSirenTick: () => {},
+                playTransformSplit: () => playOneShot(18, 0.42, false),
+                playBonusChime: () => playOneShot(18, 0.44, false),
+                playAmbientTick: () => {},
+                playGameOver: (isNewHigh = false) => {
+                    stopAll();
+                    if (isNewHigh) playOneShot(12, 0.36, true);
+                },
+                playRaw: (freq, type, duration) => {
+                    if (soundMuted) return;
+                    const c = ensureCtx();
+                    if (!c || !c.createOscillator || !c.createGain) return;
+                    try {
+                        const osc = c.createOscillator();
+                        const gain = c.createGain();
+                        osc.type = type || 'square';
+                        osc.frequency.setValueAtTime(freq, c.currentTime);
+                        if (osc.frequency.exponentialRampToValueAtTime) {
+                            osc.frequency.exponentialRampToValueAtTime(10, c.currentTime + duration);
+                        }
+                        gain.gain.setValueAtTime(0.06, c.currentTime);
+                        if (gain.gain.linearRampToValueAtTime) {
+                            gain.gain.linearRampToValueAtTime(0, c.currentTime + duration);
+                        }
+                        osc.connect(gain); gain.connect(c.destination);
+                        osc.start(); osc.stop(c.currentTime + duration);
+                    } catch (e) {}
+                }
+            };
+        })();
+
         function playSfx(freq, type = 'square', duration = 0.1) {
-            try {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = type;
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + duration);
-                gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(); osc.stop(audioCtx.currentTime + duration);
-            } catch (e) {}
+            GalagaSound.playRaw(freq, type, duration);
         }
 
+        // =========================================================================
+        // AUTHENTIC 1981 NAMCO ARCADE PALETTE & 16x16 PIXEL SPRITES
+        // =========================================================================
         const PALETTE = {
             'W': '#DEDEDE',
             'R': '#FF0000',
@@ -320,6 +866,7 @@
             'D': '#555555',
             '.': 'transparent'
         };
+
         const SPRITES = {
             player: [
                 ".......W........",
@@ -508,33 +1055,300 @@
                     "......BB.BB.....",
                     ".......B.B......"
                 ]
+            ],
+            // Authentic 1981 Galaga Transform #1: Scorpion (Sasori) - Stages 4-6
+            scorpion: [
+                [
+                    ".......Y........",
+                    "......YYY.......",
+                    ".....YR.RY......",
+                    "...Y.YRRRY.Y....",
+                    "..YY..YYY..YY...",
+                    ".YYY.YWWWY.YYY..",
+                    ".YYYYRRRRRYYYY..",
+                    "..YYYRWWWRYYY...",
+                    "...YYRRRRRYY....",
+                    "....Y.YYY.Y.....",
+                    "...Y..YRY..Y....",
+                    "..Y...YRY...Y...",
+                    "..Y....Y....Y...",
+                    ".......Y........",
+                    "......Y.Y.......",
+                    "................"
+                ],
+                [
+                    ".......Y........",
+                    "......YYY.......",
+                    ".....YR.RY......",
+                    "....YYRRRYY.....",
+                    "...Y..YYY..Y....",
+                    "..YY.YWWWY.YY...",
+                    "..YYYRRRRRYYY...",
+                    "...YYRWWWRYY....",
+                    "....YRRRRRY.....",
+                    "...Y..YYY..Y....",
+                    "..Y...YRY...Y...",
+                    "..Y...YRY...Y...",
+                    ".......Y........",
+                    "......Y.Y.......",
+                    ".....Y...Y......",
+                    "................"
+                ]
+            ],
+            // Authentic 1981 Galaga Transform #2: Bosconian Spy Ship (Midori) - Stages 8-10
+            bosconian: [
+                [
+                    ".......G........",
+                    "......GGG.......",
+                    ".....GGGGG......",
+                    "....GGRRRGG.....",
+                    "...GGRWWWRGG....",
+                    "..GGGRWWWRGGG...",
+                    ".GGGGGRRRGGGGG..",
+                    "GGGGGGGGGGGGGGG.",
+                    ".GG..GGRGG..GG..",
+                    "..G..GGGGG..G...",
+                    ".....G.G.G......",
+                    "....G..G..G.....",
+                    "....R.....R.....",
+                    "................",
+                    "................",
+                    "................"
+                ],
+                [
+                    ".......C........",
+                    "......GGG.......",
+                    ".....GGGGG......",
+                    "....GGRRRGG.....",
+                    "...GGRYYYRGG....",
+                    "..GGGRYYYRGGG...",
+                    ".GGGGGRRRGGGGG..",
+                    ".GGGGGGGGGGGGG..",
+                    "..GG.GGRGG.GG...",
+                    ".....GGGGG......",
+                    "....G..G..G.....",
+                    "...G...G...G....",
+                    "...R.......R....",
+                    "................",
+                    "................",
+                    "................"
+                ]
+            ],
+            // Authentic 1981 Galaga Transform #3: Galaxian Flagship - Stages 12-14
+            galaxian: [
+                [
+                    ".......Y........",
+                    "......YYY.......",
+                    ".....YYYYY......",
+                    "..R..YYRYY..R...",
+                    "..R..YRRRY..R...",
+                    ".RRR.YYYYY.RRR..",
+                    ".RRRRYYYYYRRRR..",
+                    "..RRRYYYYYRRR...",
+                    "...YYBYYYBYY....",
+                    "..YY.BBBBB.YY...",
+                    ".YY..B.B.B..YY..",
+                    ".Y...B...B...Y..",
+                    ".....Y...Y......",
+                    "................",
+                    "................",
+                    "................"
+                ],
+                [
+                    ".......Y........",
+                    "......YYY.......",
+                    ".....YYYYY......",
+                    "...R.YYRYY.R....",
+                    "...R.YRRRY.R....",
+                    "..RRRYYYYYRRR...",
+                    "..RRRYYYYYRRR...",
+                    "...RRYYYYYRR....",
+                    "...YYBYYYBYY....",
+                    "...Y.BBBBB.Y....",
+                    "..Y..B.B.B..Y...",
+                    ".....B...B......",
+                    "....Y.....Y.....",
+                    "................",
+                    "................",
+                    "................"
+                ]
             ]
         };
-        SPRITES.scorpion = SPRITES.butterfly;
 
+        // Authentic 4-frame arcade pixel starburst enemy explosions
+        const EXPLOSION_ENEMY_FRAMES = [
+            [
+                "................",
+                "................",
+                "................",
+                ".......Y........",
+                ".....Y.W.Y......",
+                "....YWWWWW......",
+                "...YWWWRWWY.....",
+                "...WWWRRRWW.....",
+                "...YWWWRWWY.....",
+                "....YWWWWW......",
+                ".....Y.W.Y......",
+                ".......Y........",
+                "................",
+                "................",
+                "................",
+                "................"
+            ],
+            [
+                "................",
+                "....R.....R.....",
+                "..Y..R.Y.R..Y...",
+                "...Y..WWW..Y....",
+                "..R.YWRRRWY.R...",
+                "...YWRWWWRWY....",
+                "..Y.RRWWWRR.Y...",
+                "...WRWWCWWWR....",
+                "..Y.RRWWWRR.Y...",
+                "...YWRWWWRWY....",
+                "..R.YWRRRWY.R...",
+                "...Y..WWW..Y....",
+                "..Y..R.Y.R..Y...",
+                "....R.....R.....",
+                "................",
+                "................"
+            ],
+            [
+                "..R..........R..",
+                "....Y..R...Y....",
+                ".Y....Y.Y....Y..",
+                "....R..W..R.....",
+                "..R..Y...Y..R...",
+                ".Y..R..C..R..Y..",
+                "...Y..C.C..Y....",
+                "..R..C...C..R...",
+                "...Y..C.C..Y....",
+                ".Y..R..C..R..Y..",
+                "..R..Y...Y..R...",
+                "....R..W..R.....",
+                ".Y....Y.Y....Y..",
+                "....Y..R...Y....",
+                "..R..........R..",
+                "................"
+            ],
+            [
+                ".Y............Y.",
+                "......R..R......",
+                "..R..........R..",
+                "................",
+                ".R....C..C....R.",
+                "................",
+                "....C......C....",
+                "..R..........R..",
+                "....C......C....",
+                "................",
+                ".R....C..C....R.",
+                "................",
+                "..R..........R..",
+                "......R..R......",
+                ".Y............Y.",
+                "................"
+            ]
+        ];
+
+        // =========================================================================
+        // GAME STATE
+        // =========================================================================
         let gameActive = false, score = 0, level = 1, lives = 3, frame = 0, highScore = 20000;
         let player = null, enemies = [], bullets = [], enemyBullets = [], stars = [], particles = [];
+        let explosions = [], scorePopups = [];
         let tractorBeam = null, capturedShip = null, isDualShip = false;
         let statusBannerText = '', statusBannerColor = '#00FFFF', statusBannerTimer = 0;
 
-        function initStars() {
-            stars = [];
-            for (let i = 0; i < 60; i++) stars.push({ x: Math.random() * WIDTH, y: Math.random() * HEIGHT, speed: 0.5 + Math.random() * 0.9, color: [PALETTE.W, PALETTE.B, PALETTE.R, PALETTE.Y][Math.floor(Math.random() * 4)] });
+        // Authentic 1981 Galaga tracking state
+        let shotsFired = 0, hitsLanded = 0;
+        let nextExtraLife = 20000;
+        let stageIntroTimer = 0;
+        let isChallengingStage = false;
+        let challengingHits = 0;
+        let challengingWaveHits = [0, 0, 0, 0, 0];
+        let challengingResult = null; // { timer, hits, shownHits, bonus, isPerfect, done }
+        let transformGroups = {};     // groupId -> { remaining, bonus, type }
+        let nextTransformGroupId = 1;
+        let formationClock = 0;
+        let formationBreath = 0;
+        let formationEntered = false;
+        let ambientStep = 0;
+        let starScrollPaused = false;
+
+        function isChallengingLevel(lvl) {
+            return lvl >= 3 && (lvl - 3) % 4 === 0;
         }
 
-        function createExplosion(x, y, count = 20) {
-            const colors = [PALETTE.W, PALETTE.Y, PALETTE.R, '#FF8800', PALETTE.C];
+        function getTransformTypeForLevel(lvl) {
+            if (lvl < 4 || isChallengingLevel(lvl)) return null;
+            // Stages 4-6 -> scorpion (1000), 8-10 -> bosconian (2000), 12-14 -> galaxian (3000), repeating
+            const blockIndex = Math.floor((lvl - 4) / 4) % 3;
+            if (blockIndex === 0) return { type: 'scorpion', bonus: 1000 };
+            if (blockIndex === 1) return { type: 'bosconian', bonus: 2000 };
+            return { type: 'galaxian', bonus: 3000 };
+        }
+
+        function addScore(pts, popupX = null, popupY = null, popupColor = PALETTE.C) {
+            score += pts;
+            if (popupX !== null && popupY !== null && pts >= 400) {
+                scorePopups.push({
+                    x: popupX,
+                    y: popupY,
+                    text: String(pts),
+                    color: pts >= 1600 ? PALETTE.Y : popupColor,
+                    timer: 52
+                });
+            }
+            if (score >= nextExtraLife) {
+                lives++;
+                nextExtraLife = (nextExtraLife === 20000) ? 70000 : nextExtraLife + 70000;
+                const livesEl = document.getElementById('lives-display');
+                if (livesEl) livesEl.innerText = Math.max(0, lives);
+                statusBannerText = '1UP!';
+                statusBannerColor = PALETTE.G;
+                statusBannerTimer = 85;
+                GalagaSound.playExtraLife();
+            }
+        }
+
+        function initStars() {
+            stars = [];
+            const starPalette = [PALETTE.W, PALETTE.B, PALETTE.R, PALETTE.Y, PALETTE.C, PALETTE.M];
+            for (let i = 0; i < 64; i++) {
+                stars.push({
+                    x: Math.floor(Math.random() * (WIDTH / 2)) * 2,
+                    y: Math.random() * HEIGHT,
+                    speed: 0.45 + (i % 3) * 0.38,
+                    color: starPalette[i % starPalette.length],
+                    blinkOffset: Math.floor(Math.random() * 60)
+                });
+            }
+        }
+
+        function createExplosion(x, y, count = 18, isPlayer = false) {
+            explosions.push({
+                x, y,
+                frame: 0,
+                maxFrames: 4,
+                tick: 0,
+                ticksPerFrame: isPlayer ? 9 : 5,
+                scale: isPlayer ? 3.2 : 2.1
+            });
+            const colors = isPlayer
+                ? [PALETTE.W, PALETTE.R, PALETTE.Y, '#FF8800']
+                : [PALETTE.W, PALETTE.Y, PALETTE.R, PALETTE.C];
             for (let i = 0; i < count; i++) {
                 const ang = Math.random() * Math.PI * 2;
-                const spd = 0.8 + Math.random() * 3.0;
+                const spd = (isPlayer ? 1.0 : 0.7) + Math.random() * (isPlayer ? 3.4 : 2.4);
                 particles.push({
                     x, y,
                     vx: Math.cos(ang) * spd,
                     vy: Math.sin(ang) * spd,
                     life: 1.0,
-                    decay: 0.018 + Math.random() * 0.018,
+                    decay: 0.022 + Math.random() * 0.02,
                     color: colors[Math.floor(Math.random() * colors.length)],
-                    size: 2 + Math.random() * 2
+                    size: isPlayer ? (2 + Math.random() * 3) : 2
                 });
             }
         }
@@ -543,22 +1357,80 @@
             ctx.save();
             ctx.translate(x, y);
             ctx.rotate(rotation);
+            const half = data.length / 2;
             data.forEach((row, ri) => {
                 for (let ci = 0; ci < row.length; ci++) {
                     const char = row[ci];
                     if (char !== '.' && PALETTE[char]) {
                         ctx.fillStyle = PALETTE[char];
-                        ctx.fillRect((ci - 8) * scale, (ri - 8) * scale, scale, scale);
+                        ctx.fillRect((ci - half) * scale, (ri - half) * scale, scale, scale);
                     }
                 }
             });
             ctx.restore();
         }
 
+        // =========================================================================
+        // CHOREOGRAPHED SPLINE PATH EVALUATOR (ENTRY WAVES & CHALLENGING STAGES)
+        // =========================================================================
+        function evalPolylinePath(pts, t) {
+            const clamped = Math.max(0, Math.min(0.9999, t));
+            const totalSegs = pts.length - 1;
+            const scaled = clamped * totalSegs;
+            const seg = Math.min(totalSegs - 1, Math.floor(scaled));
+            const u = scaled - seg;
+            // Catmull-Rom smooth spline interpolation through control points
+            const p0 = pts[Math.max(0, seg - 1)];
+            const p1 = pts[seg];
+            const p2 = pts[Math.min(totalSegs, seg + 1)];
+            const p3 = pts[Math.min(totalSegs, seg + 2)];
+            const u2 = u * u, u3 = u2 * u;
+            const x = 0.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * u + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * u2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * u3);
+            const y = 0.5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * u + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * u2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * u3);
+            const dx = 0.5 * ((-p0[0] + p2[0]) + 2 * (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * u + 3 * (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * u2);
+            const dy = 0.5 * ((-p0[1] + p2[1]) + 2 * (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * u + 3 * (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * u2);
+            return { x, y, angle: Math.atan2(dy, dx) + Math.PI / 2 };
+        }
+
+        function getFormationSlotPos(tx, ty) {
+            if (!formationEntered) {
+                return {
+                    x: tx + Math.sin(formationClock * 0.022) * 22,
+                    y: ty + Math.cos(formationClock * 0.014) * 2.5
+                };
+            }
+            // Authentic 1981 Galaga breathing expansion/contraction around screen center
+            const pulse = 1 + Math.sin(formationBreath * 0.048) * 0.115;
+            const sway = Math.sin(formationClock * 0.015) * 8;
+            return {
+                x: (WIDTH / 2) + (tx - WIDTH / 2) * pulse + sway,
+                y: 72 + (ty - 72) * (1 + Math.sin(formationBreath * 0.048) * 0.06)
+            };
+        }
+
+        function fireAimedEnemyBullet(x, y) {
+            const maxEnemyBullets = Math.min(3 + Math.floor(level / 2), 8);
+            if (!player || enemyBullets.length >= maxEnemyBullets) return;
+            const speed = Math.min(3.3 + (level - 1) * 0.16, 4.9);
+            const targetX = isDualShip ? player.x + 14 : player.x;
+            const dx = targetX - x;
+            const dy = Math.max(40, player.y - y);
+            const dist = Math.hypot(dx, dy);
+            // Clamp horizontal deflection to realistic Galaga aimed-shot cone
+            let vx = (dx / dist) * speed;
+            const maxVx = speed * 0.52;
+            vx = Math.max(-maxVx, Math.min(maxVx, vx));
+            const vy = Math.sqrt(Math.max(1, speed * speed - vx * vx));
+            enemyBullets.push({ x, y: y + 10, vx, vy });
+        }
+
+        // =========================================================================
+        // PLAYER CLASS (AUTHENTIC 2-SHOT LIMIT & DUAL FIGHTER MECHANICS)
+        // =========================================================================
         class Player {
             constructor() {
                 this.x = WIDTH / 2;
-                this.y = HEIGHT - 40;
+                this.y = HEIGHT - 42;
                 this.cooldown = 0;
                 this.exploding = false;
                 this.explodeTimer = 0;
@@ -578,8 +1450,8 @@
                     if (this.explodeTimer <= 0) {
                         this.exploding = false;
                         this.x = WIDTH / 2;
-                        this.y = HEIGHT - 40;
-                        this.invulnerable = 90; // ~1.5s invulnerability upon respawn
+                        this.y = HEIGHT - 42;
+                        this.invulnerable = 90;
                     }
                     return;
                 }
@@ -595,13 +1467,22 @@
                                     keys['ControlLeft'] || keys['ControlRight'] || keys['ShiftLeft'] || keys['ShiftRight'] ||
                                     touchState.fire || gamepadState.fire;
 
-                if (moveLeft) this.x -= 2.2;
-                if (moveRight) this.x += 2.2;
+                if (moveLeft) this.x -= 3.0;
+                if (moveRight) this.x += 3.0;
                 this.x = Math.max(20, Math.min(WIDTH - (isDualShip ? 48 : 20), this.x));
-                if (firePressed && this.cooldown <= 0) {
-                    bullets.push({ x: this.x, y: this.y - 15 });
-                    if (isDualShip) bullets.push({ x: this.x + 28, y: this.y - 15 });
-                    playSfx(800); this.cooldown = 18;
+
+                // Authentic 1981 Galaga 2-shot cap per fighter (2 active bullets single, 4 dual)
+                const maxActiveBullets = isDualShip ? 4 : 2;
+                const shotBatch = isDualShip ? 2 : 1;
+                if (firePressed && this.cooldown <= 0 && (bullets.length + shotBatch) <= maxActiveBullets) {
+                    bullets.push({ x: this.x, y: this.y - 16 });
+                    shotsFired++;
+                    if (isDualShip) {
+                        bullets.push({ x: this.x + 28, y: this.y - 16 });
+                        shotsFired++;
+                    }
+                    GalagaSound.playShot();
+                    this.cooldown = 7;
                 }
                 if (this.cooldown > 0) this.cooldown--;
             }
@@ -611,6 +1492,29 @@
                 drawSprite(this.capturing && Math.floor(frame / 8) % 2 === 1 ? SPRITES.captured_player : SPRITES.player, this.x, this.y, this.capturing ? this.captureAngle : 0);
                 if (isDualShip && !this.capturing) drawSprite(SPRITES.player, this.x + 28, this.y);
             }
+        }
+
+        function showGameOverScreen() {
+            gameActive = false;
+            GalagaSound.playGameOver(score > 20000 && score >= highScore);
+            const titleEl = document.getElementById('menu-title');
+            const subEl = document.getElementById('menu-sub');
+            const btnEl = document.getElementById('start-btn');
+            const resPanel = document.getElementById('results-panel');
+            const resShots = document.getElementById('res-shots');
+            const resHits = document.getElementById('res-hits');
+            const resRatio = document.getElementById('res-ratio');
+            const label1up = document.getElementById('label-1up');
+            if (label1up && label1up.classList) label1up.classList.remove('blink-active');
+            if (titleEl) titleEl.innerText = "GAME OVER";
+            if (subEl) subEl.innerText = `FINAL SCORE: ${score}`;
+            if (btnEl) btnEl.innerText = "PLAY AGAIN";
+            if (resShots) resShots.innerText = String(shotsFired);
+            if (resHits) resHits.innerText = String(hitsLanded);
+            const ratio = shotsFired > 0 ? ((hitsLanded / shotsFired) * 100).toFixed(1) : '0.0';
+            if (resRatio) resRatio.innerText = `${ratio}%`;
+            if (resPanel && resPanel.style) resPanel.style.display = 'block';
+            document.getElementById('menu-overlay').style.display = 'flex';
         }
 
         function completePlayerCapture(boss) {
@@ -623,8 +1527,8 @@
             boss.state = 'return';
             statusBannerText = 'FIGHTER CAPTURED';
             statusBannerColor = PALETTE.R;
-            statusBannerTimer = 95;
-            playSfx(220, 'sawtooth', 0.35);
+            statusBannerTimer = 115;
+            GalagaSound.playCapturedTheme();
 
             setTimeout(() => {
                 if (!gameActive) return;
@@ -635,80 +1539,248 @@
                     player = new Player();
                     player.invulnerable = 90;
                 } else {
-                    gameActive = false;
-                    const titleEl = document.getElementById('menu-title');
-                    const subEl = document.getElementById('menu-sub');
-                    const btnEl = document.getElementById('start-btn');
-                    if (titleEl) titleEl.innerText = "GAME OVER";
-                    if (subEl) subEl.innerText = `SCORE: ${score}`;
-                    if (btnEl) btnEl.innerText = "PLAY AGAIN";
-                    document.getElementById('menu-overlay').style.display = 'flex';
+                    showGameOverScreen();
                 }
-            }, 900);
+            }, 950);
         }
 
+        // =========================================================================
+        // ENEMY CLASS (ENTRY WAVES, BREATHING FORMATION, CONVOY DIVES, TRANSFORMS,
+        // TRACTOR BEAM, CHALLENGING STAGE PATTERNS, ROGUE CAPTURED FIGHTER)
+        // =========================================================================
         class Enemy {
-            constructor(tx, ty, type, delay) {
-                this.tx = tx; this.ty = ty; this.type = type;
+            constructor(tx, ty, type, delay, opts = {}) {
+                this.tx = tx;
+                this.ty = ty;
+                this.type = type;
                 this.hp = type === 'boss' ? 2 : 1;
-                this.x = WIDTH / 2; this.y = -20;
-                this.state = 'wait'; this.timer = delay;
-                this.angle = 0; this.phase = 0;
+                this.x = opts.startX ?? WIDTH / 2;
+                this.y = opts.startY ?? -24;
+                this.state = 'wait';
+                this.timer = delay;
+                this.angle = 0;
+                this.phase = 0;
                 this.hasCaptured = false;
                 this.tractorTargetX = WIDTH / 2;
+                this.entryPath = opts.entryPath || null;
+                this.entrySpeed = opts.entrySpeed || 0.0115;
+                this.challengingWave = opts.challengingWave ?? -1;
+                this.diveType = 'standard';
+                this.diveStartX = tx;
+                this.diveStartY = ty;
+                this.diveDir = 1;
+                this.diveShots = 0;
+                this.escortLeader = null;
+                this.escortOffsetX = 0;
+                this.escortOffsetY = 0;
+                this.escortCount = 0;
+                this.transformGroupId = opts.transformGroupId || 0;
+                this.canTransform = Boolean(opts.canTransform);
+                this.isRogueFighter = Boolean(opts.isRogueFighter);
             }
+
+            beginDive(diveDir = null) {
+                this.state = 'dive';
+                this.phase = 0;
+                this.diveStartX = this.x;
+                this.diveStartY = this.y;
+                this.diveDir = diveDir ?? (this.x < WIDTH / 2 ? 1 : -1);
+                this.diveShots = 0;
+                this.escortCount = 0;
+                this.diveType = this.type === 'bee' ? 'bee_loop' : 'weave';
+                GalagaSound.playDive();
+
+                // Authentic Boss Galaga + 1 or 2 Butterfly Escort Convoy!
+                if (this.type === 'boss' && !this.hasCaptured) {
+                    const candidates = enemies.filter(other =>
+                        other !== this &&
+                        other.type === 'butterfly' &&
+                        other.state === 'formation' &&
+                        Math.abs(other.tx - this.tx) <= 64
+                    ).sort((a, b) => Math.abs(a.tx - this.tx) - Math.abs(b.tx - this.tx));
+
+                    const escorts = candidates.slice(0, 2);
+                    this.escortCount = escorts.length;
+                    escorts.forEach((esc, idx) => {
+                        esc.state = 'escort';
+                        esc.escortLeader = this;
+                        esc.escortOffsetX = idx === 0 ? -34 : 34;
+                        esc.escortOffsetY = 30;
+                        esc.diveShots = 0;
+                    });
+                }
+
+                // Authentic Stage 4+ Transform split (1 enemy morphs into 3 Scorpions/Bosconians/Galaxians!)
+                if (this.canTransform && !isChallengingStage) {
+                    const tInfo = getTransformTypeForLevel(level);
+                    if (tInfo) {
+                        this.canTransform = false;
+                        const gid = nextTransformGroupId++;
+                        this.type = tInfo.type;
+                        this.hp = 1;
+                        this.transformGroupId = gid;
+                        this.diveType = 'weave';
+                        transformGroups[gid] = { remaining: 3, bonus: tInfo.bonus, type: tInfo.type };
+                        GalagaSound.playTransformSplit();
+
+                        for (let c = -1; c <= 1; c += 2) {
+                            const clone = new Enemy(this.tx, this.ty, tInfo.type, 0, {
+                                startX: this.x + c * 22,
+                                startY: this.y - 14,
+                                transformGroupId: gid
+                            });
+                            clone.state = 'dive';
+                            clone.phase = 0.04;
+                            clone.diveStartX = this.x + c * 22;
+                            clone.diveStartY = this.y - 14;
+                            clone.diveDir = this.diveDir;
+                            clone.diveType = 'weave';
+                            enemies.push(clone);
+                        }
+                    }
+                }
+            }
+
             update() {
-                if (this.state === 'wait') { if (this.timer-- <= 0) this.state = 'entry'; return; }
+                if (this.state === 'wait') {
+                    if (this.timer-- <= 0) {
+                        this.state = isChallengingStage ? 'challenge' : 'entry';
+                        this.phase = 0;
+                    }
+                    return;
+                }
+
+                // Challenging Stage choreographed flight (no firing!)
+                if (this.state === 'challenge') {
+                    this.phase += this.entrySpeed;
+                    if (this.phase >= 1) {
+                        this.state = 'done';
+                        return;
+                    }
+                    if (this.entryPath) {
+                        const pos = evalPolylinePath(this.entryPath, this.phase);
+                        this.x = pos.x;
+                        this.y = pos.y;
+                        this.angle = pos.angle;
+                    }
+                    return;
+                }
+
+                // Choreographed Stage Entry spline -> docks smoothly into formation slot
                 if (this.state === 'entry') {
-                    this.phase += 0.0085;
-                    this.x = this.tx + Math.cos(this.phase * 4.5) * (110 * (1 - this.phase));
-                    this.y = this.ty + Math.sin(this.phase * 4.5) * (110 * (1 - this.phase)) - (1 - this.phase) * 90;
-                    this.angle = this.phase * 4.5 + Math.PI / 2;
-                    if (this.phase >= 1) { this.state = 'formation'; this.angle = 0; }
-                } else if (this.state === 'return') {
-                    const fx = this.tx + Math.sin(frame * 0.018) * 20;
-                    const fy = this.ty + Math.cos(frame * 0.012) * 3;
-                    const dx = fx - this.x;
-                    const dy = fy - this.y;
+                    this.phase += this.entrySpeed;
+                    if (this.entryPath) {
+                        const slot = getFormationSlotPos(this.tx, this.ty);
+                        const pathWithTarget = this.entryPath.concat([[slot.x, slot.y]]);
+                        const pos = evalPolylinePath(pathWithTarget, Math.min(1, this.phase));
+                        this.x = pos.x;
+                        this.y = pos.y;
+                        this.angle = pos.angle;
+                    } else {
+                        this.x = this.tx + Math.cos(this.phase * 4.5) * (110 * (1 - this.phase));
+                        this.y = this.ty + Math.sin(this.phase * 4.5) * (110 * (1 - this.phase)) - (1 - this.phase) * 90;
+                        this.angle = this.phase * 4.5 + Math.PI / 2;
+                    }
+                    // Stage 2+ entry enemies fire occasional aimed shots during their swoop
+                    if (level >= 2 && this.diveShots < 1 && this.phase > 0.35 && this.phase < 0.72 && this.y > 70 && this.y < HEIGHT - 150) {
+                        if (Math.random() < 0.0045 * Math.min(level - 1, 5)) {
+                            fireAimedEnemyBullet(this.x, this.y);
+                            this.diveShots++;
+                        }
+                    }
+                    if (this.phase >= 1) {
+                        this.state = 'formation';
+                        this.angle = 0;
+                        this.entryPath = null;
+                    }
+                    return;
+                }
+
+                if (this.state === 'return') {
+                    const slot = getFormationSlotPos(this.tx, this.ty);
+                    const dx = slot.x - this.x;
+                    const dy = slot.y - this.y;
                     const dist = Math.hypot(dx, dy);
                     if (dist < 4) {
-                        this.x = fx;
-                        this.y = fy;
+                        this.x = slot.x;
+                        this.y = slot.y;
                         this.angle = 0;
                         this.state = 'formation';
                     } else {
-                        this.x += (dx / dist) * 2.6;
-                        this.y += (dy / dist) * 2.6;
-                        this.angle = 0;
+                        this.x += (dx / dist) * 3.0;
+                        this.y += (dy / dist) * 3.0;
+                        this.angle = Math.atan2(dy, dx) + Math.PI / 2;
                     }
-                } else if (this.state === 'formation') {
-                    this.x = this.tx + Math.sin(frame * 0.018) * 20;
-                    this.y = this.ty + Math.cos(frame * 0.012) * 3;
-                    const activeDives = enemies.filter(e => e.state === 'dive' || e.state === 'tractor').length;
-                    const maxDives = Math.min(2 + Math.floor((level - 1) * 0.5), 5);
-                    if (activeDives < maxDives && Math.random() < 0.00022 * (1 + (level - 1) * 0.25)) {
+                    return;
+                }
+
+                if (this.state === 'formation') {
+                    const slot = getFormationSlotPos(this.tx, this.ty);
+                    this.x = slot.x;
+                    this.y = slot.y;
+                    this.angle = 0;
+
+                    // Pause launching new attacks during rescued-fighter docking
+                    if (capturedShip) return;
+
+                    const activeDives = enemies.filter(e => e.state === 'dive' || e.state === 'tractor' || e.state === 'escort').length;
+                    const stragglerFrenzy = formationEntered && enemies.length <= 4;
+                    const maxDives = stragglerFrenzy ? 4 : Math.min(2 + Math.floor((level - 1) * 0.55), 6);
+                    const diveProb = stragglerFrenzy
+                        ? 0.014
+                        : (formationEntered ? 0.00042 : 0.00018) * (1 + (level - 1) * 0.24);
+
+                    if (activeDives < maxDives && Math.random() < diveProb) {
                         const canTractor = this.type === 'boss' &&
                             !this.hasCaptured &&
                             !isDualShip &&
                             !capturedShip &&
                             !tractorBeam &&
+                            enemies.length > 1 &&
                             player && !player.exploding && !player.capturing && !player.captured &&
                             !enemies.some(e => e.hasCaptured || e.state === 'tractor');
+
                         if (canTractor && Math.random() < 0.55) {
                             this.state = 'tractor';
                             this.phase = 0;
-                            this.tractorTargetX = Math.max(60, Math.min(WIDTH - 60, player.x));
+                            this.tractorTargetX = Math.max(64, Math.min(WIDTH - 64, player.x));
+                            GalagaSound.playDive();
                         } else {
-                            this.state = 'dive';
-                            this.phase = 0;
+                            this.beginDive();
                         }
                     }
-                } else if (this.state === 'tractor') {
-                    const hoverY = HEIGHT - 188; // y=324, 148px above player.y=472
+                    return;
+                }
+
+                if (this.state === 'escort') {
+                    if (!this.escortLeader || !enemies.includes(this.escortLeader) || this.escortLeader.state !== 'dive') {
+                        this.escortLeader = null;
+                        this.state = 'dive';
+                        this.diveType = 'weave';
+                        this.diveStartX = this.x;
+                        this.diveStartY = this.y;
+                        return;
+                    }
+                    const tx = this.escortLeader.x + this.escortOffsetX;
+                    const ty = this.escortLeader.y + this.escortOffsetY;
+                    const dx = tx - this.x;
+                    const dy = ty - this.y;
+                    this.x += dx * 0.22;
+                    this.y += dy * 0.22;
+                    this.angle = this.escortLeader.angle;
+                    if (!capturedShip && player && this.diveShots < 2 && Math.random() < 0.009 && this.y > 70 && this.y < player.y - 90) {
+                        fireAimedEnemyBullet(this.x, this.y);
+                        this.diveShots++;
+                    }
+                    return;
+                }
+
+                if (this.state === 'tractor') {
+                    const hoverY = HEIGHT - 188; // y=324, 148px above player
                     if (this.y < hoverY && !tractorBeam) {
-                        this.y += 2.2;
+                        this.y += 2.35;
                         const dx = this.tractorTargetX - this.x;
-                        this.x += Math.sign(dx) * Math.min(Math.abs(dx), 2.0);
+                        this.x += Math.sign(dx) * Math.min(Math.abs(dx), 2.1);
                         this.angle = Math.PI;
                     } else {
                         this.y = hoverY;
@@ -721,15 +1793,21 @@
                                 h: 0,
                                 maxH: 148,
                                 state: 'grow',
-                                timer: 165
+                                timer: 165,
+                                soundStep: 0
                             };
-                            playSfx(320, 'sine', 0.25);
+                            GalagaSound.playTractorBeamTick(0);
                         }
                         if (tractorBeam && tractorBeam.boss === this) {
                             tractorBeam.x = this.x;
                             tractorBeam.y = this.y + 14;
-                            if (frame % 12 === 0) {
-                                playSfx(240 + (frame % 24 === 0 ? 80 : 0), 'sine', 0.08);
+                            if (frame % 7 === 0) {
+                                tractorBeam.soundStep++;
+                                if (player && player.capturing) {
+                                    GalagaSound.playCaptureSirenTick(tractorBeam.soundStep);
+                                } else {
+                                    GalagaSound.playTractorBeamTick(tractorBeam.soundStep);
+                                }
                             }
                             if (tractorBeam.state === 'grow') {
                                 tractorBeam.h = Math.min(tractorBeam.maxH, tractorBeam.h + 3.2);
@@ -742,7 +1820,7 @@
                                     if (Math.abs(player.x - this.x) < 34) {
                                         player.capturing = true;
                                         tractorBeam.timer = Math.max(tractorBeam.timer, 120);
-                                        playSfx(440, 'triangle', 0.25);
+                                        GalagaSound.playCaptureSirenTick(0);
                                     }
                                 }
                                 if (player && player.capturing) {
@@ -760,32 +1838,92 @@
                                 if (tractorBeam.h <= 0) {
                                     tractorBeam = null;
                                     this.state = 'dive';
+                                    this.diveType = 'weave';
                                 }
                             }
                         } else {
                             this.state = 'dive';
                         }
                     }
-                } else if (this.state === 'dive') {
-                    this.y += 2.1;
-                    this.x += Math.sin(this.y * 0.022) * 2.4;
-                    this.angle = Math.PI;
-                    if (player && Math.random() < 0.008 && this.y > 60 && this.y < player.y - 80 && enemyBullets.length < 3) {
-                        enemyBullets.push({ x: this.x, y: this.y + 10 });
-                        playSfx(350, 'sawtooth', 0.05);
+                    return;
+                }
+
+                if (this.state === 'dive') {
+                    const prevX = this.x, prevY = this.y;
+                    const speedMult = 1 + Math.min((level - 1) * 0.055, 0.45);
+                    this.phase += 0.014 * speedMult;
+
+                    const stragglerLoop = formationEntered && enemies.length <= 4;
+                    if (this.diveType === 'bee_loop' && !stragglerLoop && this.y > HEIGHT - 115 && this.phase > 0.75) {
+                        // Classic Galaga Bee bottom U-turn swoop back to formation
+                        this.state = 'return';
+                        return;
                     }
-                    if (this.y > HEIGHT + 20) { this.y = -20; this.state = 'entry'; this.phase = 0; }
+
+                    // Initial peel-out upward arc like real 1981 Galaga, then aggressive weaving dive
+                    if (this.phase < 0.22) {
+                        const a = (this.phase / 0.22) * Math.PI;
+                        this.x += this.diveDir * 1.8 * Math.sin(a);
+                        this.y -= 1.3 * Math.cos(a);
+                    } else {
+                        const homing = (player && !player.exploding && !player.captured)
+                            ? Math.sign(player.x - this.x) * 0.55
+                            : 0;
+                        this.y += 2.35 * speedMult;
+                        this.x += (Math.sin(this.phase * 5.2) * 2.55 * this.diveDir) + homing;
+                        this.x = Math.max(18, Math.min(WIDTH - 18, this.x));
+                    }
+
+                    const vx = this.x - prevX;
+                    const vy = this.y - prevY;
+                    if (Math.hypot(vx, vy) > 0.2) {
+                        this.angle = Math.atan2(vy, vx) + Math.PI / 2;
+                    }
+
+                    const maxShots = level === 1 ? 1 : 2;
+                    if (!capturedShip && player && this.diveShots < maxShots && this.y > 70 && this.y < player.y - 85) {
+                        if (Math.random() < 0.011 * (1 + (level - 1) * 0.14)) {
+                            fireAimedEnemyBullet(this.x, this.y);
+                            this.diveShots++;
+                        }
+                    }
+
+                    if (this.y > HEIGHT + 24) {
+                        if (this.transformGroupId || this.isRogueFighter) {
+                            if (this.transformGroupId && transformGroups[this.transformGroupId]) {
+                                delete transformGroups[this.transformGroupId];
+                            }
+                            this.state = 'done';
+                            return;
+                        }
+                        this.y = -20;
+                        if (stragglerLoop) {
+                            // Relentless end-of-stage wraparound attack!
+                            this.phase = 0.25;
+                            this.diveShots = 0;
+                        } else {
+                            this.state = 'return';
+                            this.phase = 0;
+                        }
+                    }
                 }
             }
+
             draw() {
-                if (this.state === 'wait') return;
+                if (this.state === 'wait' || this.state === 'done') return;
+                if (this.isRogueFighter) {
+                    drawSprite(SPRITES.captured_player, this.x, this.y, this.angle);
+                    return;
+                }
                 const spriteKey = (this.type === 'boss' && this.hp === 1) ? 'boss_hit' : this.type;
                 const frames = SPRITES[spriteKey] || SPRITES.bee;
-                drawSprite(frames[Math.floor(frame / 32) % 2], this.x, this.y, this.angle);
+                const flapSpeed = (this.state === 'formation') ? 28 : 14;
+                drawSprite(frames[Math.floor(frame / flapSpeed) % frames.length], this.x, this.y, this.angle);
                 if (this.hasCaptured) {
-                    const capY = this.state === 'dive' ? this.y - 26 : this.y - 26;
-                    const capAngle = this.state === 'dive' ? Math.PI : 0;
-                    drawSprite(SPRITES.captured_player, this.x, capY, capAngle);
+                    const capOffset = 26;
+                    const capX = this.x - Math.sin(this.angle) * capOffset;
+                    const capY = this.y - Math.cos(this.angle) * capOffset;
+                    drawSprite(SPRITES.captured_player, capX, capY, this.angle);
                 }
             }
         }
@@ -795,19 +1933,19 @@
 
             if (isDualShip) {
                 isDualShip = false;
-                createExplosion(isDualHit ? player.x + 28 : player.x, player.y, 25);
-                playSfx(150, 'sawtooth', 0.3);
+                createExplosion(isDualHit ? player.x + 28 : player.x, player.y, 26, true);
+                GalagaSound.playPlayerExplosion();
                 if (!isDualHit) {
                     player.x += 28;
                 }
-                player.invulnerable = 60;
+                player.invulnerable = 65;
                 return;
             }
 
             player.exploding = true;
             player.explodeTimer = 60;
-            createExplosion(player.x, player.y, 35);
-            playSfx(120, 'sawtooth', 0.5);
+            createExplosion(player.x, player.y, 38, true);
+            GalagaSound.playPlayerExplosion();
             lives--;
             const livesEl = document.getElementById('lives-display');
             if (livesEl) livesEl.innerText = Math.max(0, lives);
@@ -815,93 +1953,371 @@
             if (lives <= 0) {
                 player.explodeTimer = 999999;
                 setTimeout(() => {
-                    gameActive = false;
-                    const titleEl = document.getElementById('menu-title');
-                    const subEl = document.getElementById('menu-sub');
-                    const btnEl = document.getElementById('start-btn');
-                    if (titleEl) titleEl.innerText = "GAME OVER";
-                    if (subEl) subEl.innerText = `SCORE: ${score}`;
-                    if (btnEl) btnEl.innerText = "PLAY AGAIN";
-                    document.getElementById('menu-overlay').style.display = 'flex';
+                    showGameOverScreen();
                 }, 1200);
             }
         }
 
-        function spawnWave() {
+        // =========================================================================
+        // AUTHENTIC 5-SQUADRON STAGE ENTRY & CHALLENGING STAGE SPAWNERS
+        // =========================================================================
+        function spawnChallengingWave() {
             enemies = [];
-            const layouts = [
-                { type: 'boss', r: 1, c: 4, ox: 164, oy: 72 },
-                { type: 'butterfly', r: 2, c: 8, ox: 84, oy: 108 },
-                { type: 'bee', r: 2, c: 10, ox: 44, oy: 176 }
+            challengingHits = 0;
+            challengingWaveHits = [0, 0, 0, 0, 0];
+            challengingResult = null;
+            formationEntered = false;
+            stageIntroTimer = 115;
+            statusBannerText = 'CHALLENGING STAGE';
+            statusBannerColor = PALETTE.C;
+            statusBannerTimer = 115;
+            GalagaSound.playChallengingStart();
+
+            const patternSet = Math.floor((level - 3) / 4) % 4;
+            const wavePaths = [
+                // Wave 0: Sweep from top-left across center loop and out right
+                [[160, -24], [190, 150], [320, 250], [260, 355], [140, 320], [180, 210], [472, 130]],
+                // Wave 1: Mirror sweep from bottom-left looping high right
+                [[-24, 380], [120, 320], [240, 210], [340, 290], [240, 370], [150, 240], [472, 80]],
+                // Wave 2: Mirror sweep from bottom-right looping high left
+                [[472, 380], [328, 320], [208, 210], [108, 290], [208, 370], [298, 240], [-24, 80]],
+                // Wave 3: Top-right figure-8 ribbon
+                [[288, -24], [260, 140], [120, 230], [190, 345], [330, 280], [220, 180], [-24, 150]],
+                // Wave 4: Center twin spiral out top-sides
+                [[224, -24], [110, 150], [224, 290], [348, 220], [224, 140], [100, 270], [472, 220]]
             ];
-            let order = 0;
-            layouts.forEach(l => {
-                for (let i = 0; i < l.r; i++) {
-                    for (let j = 0; j < l.c; j++) {
-                        enemies.push(new Enemy(l.ox + j * 40, l.oy + i * 34, l.type, order++ * 8));
-                    }
+            const bonusTypes = ['bee', 'butterfly', 'scorpion', 'bosconian', 'galaxian'];
+
+            for (let w = 0; w < 5; w++) {
+                const baseDelay = 95 + w * 145;
+                const path = wavePaths[(w + patternSet) % wavePaths.length];
+                const type = w === 1 ? 'boss' : bonusTypes[(w + patternSet) % bonusTypes.length];
+                for (let k = 0; k < 8; k++) {
+                    const e = new Enemy(WIDTH / 2, 120, type === 'boss' && k % 2 === 1 ? 'butterfly' : type, baseDelay + k * 9, {
+                        startX: path[0][0],
+                        startY: path[0][1],
+                        entryPath: path,
+                        entrySpeed: 0.0072,
+                        challengingWave: w
+                    });
+                    // In Challenging Stages, even Boss-shaped targets are 1-hit like original Galaga!
+                    e.hp = 1;
+                    enemies.push(e);
                 }
+            }
+        }
+
+        function spawnWave() {
+            isChallengingStage = isChallengingLevel(level);
+            transformGroups = {};
+            formationClock = 0;
+            formationBreath = 0;
+            formationEntered = false;
+            challengingResult = null;
+
+            if (isChallengingStage) {
+                spawnChallengingWave();
+                return;
+            }
+
+            enemies = [];
+            const introBase = (level === 1) ? 250 : 54;
+            stageIntroTimer = introBase;
+            statusBannerText = `STAGE ${level}`;
+            statusBannerColor = PALETTE.C;
+            statusBannerTimer = introBase;
+
+            if (level === 1) {
+                GalagaSound.playStartTheme();
+            } else {
+                GalagaSound.playStageFlagTick();
+            }
+
+            // Authentic 5-row 40-enemy Galaga formation:
+            // Row 0: 4 Boss Galagas, Rows 1-2: 16 Butterflies, Rows 3-4: 20 Bees
+            const bosses = [];
+            for (let j = 0; j < 4; j++) bosses.push({ tx: 164 + j * 40, ty: 72, type: 'boss' });
+
+            const butterflies = [];
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 8; j++) butterflies.push({ tx: 84 + j * 40, ty: 108 + i * 34, type: 'butterfly' });
+            }
+
+            const bees = [];
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 10; j++) bees.push({ tx: 44 + j * 40, ty: 176 + i * 34, type: 'bee' });
+            }
+
+            // 5 Authentic 8-Alien Choreographed Entry Squadrons
+            const pathTopLeft = [[180, -24], [195, 110], [330, 235], [275, 340], [160, 295]];
+            const pathTopRight = [[268, -24], [253, 110], [118, 235], [173, 340], [288, 295]];
+            const pathBotLeft = [[-24, 400], [120, 350], [205, 255], [135, 195], [88, 265], [140, 315]];
+            const pathBotRight = [[472, 400], [328, 350], [243, 255], [313, 195], [360, 265], [308, 315]];
+            const pathLoopRight = [[250, -24], [295, 140], [385, 275], [310, 350], [230, 260]];
+            const pathLoopLeft = [[198, -24], [153, 140], [63, 275], [138, 350], [218, 260]];
+
+            const squadrons = [
+                // Wave 1 (8): 4 center Bees (left stream) + 4 center Butterflies (right stream)
+                [
+                    { spec: bees[4], path: pathTopLeft }, { spec: butterflies[3], path: pathTopRight },
+                    { spec: bees[5], path: pathTopLeft }, { spec: butterflies[4], path: pathTopRight },
+                    { spec: bees[14], path: pathTopLeft }, { spec: butterflies[11], path: pathTopRight },
+                    { spec: bees[15], path: pathTopLeft }, { spec: butterflies[12], path: pathTopRight }
+                ],
+                // Wave 2 (8): 4 Boss Galagas + 4 left-side Butterflies from bottom-left
+                [
+                    { spec: bosses[0], path: pathBotLeft }, { spec: butterflies[0], path: pathBotLeft },
+                    { spec: bosses[1], path: pathBotLeft }, { spec: butterflies[1], path: pathBotLeft },
+                    { spec: bosses[2], path: pathBotLeft }, { spec: butterflies[8], path: pathBotLeft },
+                    { spec: bosses[3], path: pathBotLeft }, { spec: butterflies[9], path: pathBotLeft }
+                ],
+                // Wave 3 (8): 8 remaining Butterflies from bottom-right
+                [
+                    { spec: butterflies[2], path: pathBotRight }, { spec: butterflies[5], path: pathBotRight },
+                    { spec: butterflies[6], path: pathBotRight }, { spec: butterflies[7], path: pathBotRight },
+                    { spec: butterflies[10], path: pathBotRight }, { spec: butterflies[13], path: pathBotRight },
+                    { spec: butterflies[14], path: pathBotRight }, { spec: butterflies[15], path: pathBotRight }
+                ],
+                // Wave 4 (8): 8 right-side Bees sweeping from top-right
+                [
+                    { spec: bees[6], path: pathLoopRight }, { spec: bees[7], path: pathLoopRight },
+                    { spec: bees[8], path: pathLoopRight }, { spec: bees[9], path: pathLoopRight },
+                    { spec: bees[16], path: pathLoopRight }, { spec: bees[17], path: pathLoopRight },
+                    { spec: bees[18], path: pathLoopRight }, { spec: bees[19], path: pathLoopRight }
+                ],
+                // Wave 5 (8): 8 left-side Bees sweeping from top-left
+                [
+                    { spec: bees[0], path: pathLoopLeft }, { spec: bees[1], path: pathLoopLeft },
+                    { spec: bees[2], path: pathLoopLeft }, { spec: bees[3], path: pathLoopLeft },
+                    { spec: bees[10], path: pathLoopLeft }, { spec: bees[11], path: pathLoopLeft },
+                    { spec: bees[12], path: pathLoopLeft }, { spec: bees[13], path: pathLoopLeft }
+                ]
+            ];
+
+            const hasTransforms = level >= 4;
+            let transformAssigned = 0;
+
+            squadrons.forEach((sq, sIdx) => {
+                const sqBase = introBase + sIdx * 62;
+                sq.forEach((item, k) => {
+                    const canTrans = hasTransforms &&
+                        transformAssigned < 2 &&
+                        (item.spec.type === 'bee' || item.spec.type === 'butterfly') &&
+                        (sIdx === 2 || sIdx === 3) && k === 2;
+                    if (canTrans) transformAssigned++;
+                    enemies.push(new Enemy(item.spec.tx, item.spec.ty, item.spec.type, sqBase + k * 7, {
+                        startX: item.path[0][0],
+                        startY: item.path[0][1],
+                        entryPath: item.path,
+                        entrySpeed: 0.0115 + Math.min((level - 1) * 0.0005, 0.003),
+                        canTransform: canTrans
+                    }));
+                });
             });
         }
 
+        // =========================================================================
+        // MAIN UPDATE LOOP (60.606 Hz ARCADE TIMESTEP)
+        // =========================================================================
         function update() {
             pollGamepad();
             if (!gameActive) return;
             frame++;
-            if (player) player.update();
-            stars.forEach(s => { s.y += s.speed; if (s.y > HEIGHT) s.y = 0; });
 
-            // Player bullets
+            if (stageIntroTimer > 0) stageIntroTimer--;
+
+            // Freeze starfield briefly during Challenging Stage results tally (just like 1981 hardware)
+            starScrollPaused = Boolean(challengingResult) || (player && player.capturing);
+            if (!starScrollPaused) {
+                stars.forEach(s => {
+                    s.y += s.speed;
+                    if (s.y > HEIGHT) {
+                        s.y = 0;
+                        s.x = Math.floor(Math.random() * (WIDTH / 2)) * 2;
+                    }
+                });
+            }
+
+            // Challenging Stage Results Tally Sequence
+            if (challengingResult) {
+                challengingResult.timer++;
+                if (challengingResult.timer > 35 && challengingResult.shownHits < challengingResult.hits && challengingResult.timer % 2 === 0) {
+                    challengingResult.shownHits++;
+                    if (challengingResult.shownHits % 2 === 0) GalagaSound.playStageFlagTick();
+                }
+                if (challengingResult.shownHits >= challengingResult.hits && !challengingResult.awarded) {
+                    challengingResult.awarded = true;
+                    addScore(challengingResult.bonus);
+                    GalagaSound.playChallengingClear(challengingResult.isPerfect);
+                }
+                if (challengingResult.awarded && challengingResult.timer > (challengingResult.isPerfect ? 230 : 165)) {
+                    challengingResult = null;
+                    level++;
+                    enemyBullets = [];
+                    tractorBeam = null;
+                    spawnWave();
+                }
+                if (player) player.update();
+                updateEffects();
+                syncScoreHUD();
+                return;
+            }
+
+            if (player) player.update();
+
+            // Check if all initial 40 enemies have docked into formation -> enable Breathing Pulse
+            if (!isChallengingStage && !formationEntered && enemies.length > 0) {
+                const anyEntering = enemies.some(e => e.state === 'wait' || e.state === 'entry');
+                if (!anyEntering) formationEntered = true;
+            }
+            formationClock++;
+            if (formationEntered) formationBreath++;
+
+            // Drive authentic looping 1981 Ambience (sound 0) & Tractor Beam / Capture loops (sounds 5 & 6)
+            const wantBeamMode = tractorBeam ? ((player && player.capturing) ? 6 : 5) : 0;
+            const wantAmbience = !isChallengingStage &&
+                enemies.length > 0 &&
+                !capturedShip &&
+                stageIntroTimer <= 0 &&
+                player && !player.exploding && !player.capturing && !player.captured;
+            GalagaSound.syncLoops(wantAmbience, enemies.length <= 8, wantBeamMode);
+
+            // Player bullets collision
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
-                b.y -= 6.5;
-                let hitEnemy = false;
+                b.y -= 10.5;
+                let hitSomething = false;
+
                 for (let ei = enemies.length - 1; ei >= 0; ei--) {
                     const e = enemies[ei];
+                    if (e.state === 'wait' || e.state === 'done') continue;
+
+                    // Check accidental hit on a captured red fighter riding above its Boss
+                    if (e.hasCaptured) {
+                        const capX = e.x - Math.sin(e.angle) * 26;
+                        const capY = e.y - Math.cos(e.angle) * 26;
+                        if (Math.hypot(b.x - capX, b.y - capY) < 15) {
+                            bullets.splice(i, 1);
+                            hitsLanded++;
+                            hitSomething = true;
+                            e.hasCaptured = false;
+                            createExplosion(capX, capY, 22, true);
+                            GalagaSound.playEnemyDestroy('boss');
+                            const pts = (e.state === 'formation') ? 500 : 1000;
+                            addScore(pts, capX, capY, PALETTE.R);
+                            break;
+                        }
+                    }
+
                     if (Math.hypot(b.x - e.x, b.y - e.y) < 18) {
                         bullets.splice(i, 1);
-                        hitEnemy = true;
+                        hitsLanded++;
+                        hitSomething = true;
                         e.hp = (e.hp || 1) - 1;
+
                         if (e.hp > 0) {
-                            playSfx(240, 'square', 0.08);
+                            GalagaSound.playBossHit1();
                         } else {
-                            createExplosion(e.x, e.y, 15);
+                            createExplosion(e.x, e.y, e.type === 'boss' ? 22 : 14);
+                            GalagaSound.playEnemyDestroy(e.type);
+
                             if (tractorBeam && tractorBeam.boss === e) {
                                 tractorBeam = null;
                                 if (player && player.capturing) {
                                     player.capturing = false;
-                                    player.y = HEIGHT - 40;
+                                    player.y = HEIGHT - 42;
                                     player.captureAngle = 0;
                                 }
                             }
+
                             if (e.hasCaptured) {
-                                capturedShip = { x: e.x, y: e.y - 26, angle: 0, spinTimer: 32 };
-                                statusBannerText = 'FIGHTER RESCUED!';
-                                statusBannerColor = PALETTE.C;
-                                statusBannerTimer = 85;
-                                playSfx(660, 'square', 0.25);
+                                if (e.state === 'formation') {
+                                    // Authentic 1981 arcade: destroying Boss in formation makes captured fighter turn rogue!
+                                    const rogue = new Enemy(e.x, e.y - 26, 'bee', 0, {
+                                        startX: e.x,
+                                        startY: e.y - 26,
+                                        isRogueFighter: true
+                                    });
+                                    rogue.state = 'dive';
+                                    rogue.diveType = 'weave';
+                                    rogue.phase = 0.25;
+                                    enemies.push(rogue);
+                                } else {
+                                    // Destroying Boss while DIVING rescues the captured fighter!
+                                    capturedShip = { x: e.x, y: e.y - 26, angle: 0, spinTimer: 34 };
+                                    statusBannerText = 'FIGHTER RESCUED!';
+                                    statusBannerColor = PALETTE.C;
+                                    statusBannerTimer = 95;
+                                    GalagaSound.playRescuedTheme();
+                                }
                             }
+
+                            // Authentic 1981 Galaga Scoring Table
+                            let pts = 50;
+                            if (isChallengingStage) {
+                                pts = 100;
+                                challengingHits++;
+                                if (e.challengingWave >= 0 && e.challengingWave < 5) {
+                                    challengingWaveHits[e.challengingWave]++;
+                                    if (challengingWaveHits[e.challengingWave] === 8) {
+                                        const waveBonuses = [1000, 1000, 1500, 2000, 3000];
+                                        const wBonus = waveBonuses[e.challengingWave] || 1000;
+                                        addScore(wBonus, e.x, e.y, PALETTE.Y);
+                                        GalagaSound.playBonusChime();
+                                    }
+                                }
+                            } else if (e.isRogueFighter) {
+                                pts = 1000;
+                            } else if (e.transformGroupId && transformGroups[e.transformGroupId]) {
+                                pts = 160;
+                                const grp = transformGroups[e.transformGroupId];
+                                grp.remaining--;
+                                if (grp.remaining <= 0) {
+                                    addScore(grp.bonus, e.x, e.y, PALETTE.Y);
+                                    GalagaSound.playBonusChime();
+                                    delete transformGroups[e.transformGroupId];
+                                }
+                            } else if (e.type === 'boss') {
+                                if (e.state === 'formation') {
+                                    pts = 150;
+                                } else {
+                                    // Count live escorts flying with this diving Boss!
+                                    const aliveEscorts = enemies.filter(o => o.escortLeader === e).length;
+                                    if (aliveEscorts >= 2) {
+                                        pts = 1600;
+                                        GalagaSound.playBonusChime();
+                                    } else if (aliveEscorts === 1) {
+                                        pts = 800;
+                                    } else {
+                                        pts = 400;
+                                    }
+                                }
+                            } else if (e.type === 'butterfly' || e.type === 'scorpion' || e.type === 'bosconian' || e.type === 'galaxian') {
+                                pts = (e.state === 'formation') ? 80 : 160;
+                            } else {
+                                pts = (e.state === 'formation') ? 50 : 100;
+                            }
+
                             enemies.splice(ei, 1);
-                            score += (e.type === 'boss' ? 400 : (e.type === 'butterfly' || e.type === 'scorpion' ? 160 : 100));
-                            playSfx(100, 'triangle', 0.15);
+                            addScore(pts, pts >= 400 ? e.x : null, pts >= 400 ? e.y : null);
                         }
                         break;
                     }
                 }
-                if (!hitEnemy && b.y < 0) {
+                if (!hitSomething && b.y < -12) {
                     bullets.splice(i, 1);
                 }
             }
 
-            // Rescued fighter docking sequence -> Dual Fighter
+            // Rescued fighter spin & docking sequence -> Dual Fighter
             if (capturedShip) {
                 if (capturedShip.spinTimer > 0) {
                     capturedShip.spinTimer--;
-                    capturedShip.angle += 0.35;
+                    capturedShip.angle += 0.36;
                 } else {
                     capturedShip.angle = 0;
                     const targetX = (player && !player.exploding && !player.captured) ? Math.min(WIDTH - 48, player.x) + 28 : WIDTH / 2 + 14;
-                    const targetY = HEIGHT - 40;
+                    const targetY = HEIGHT - 42;
                     const dx = targetX - capturedShip.x;
                     const dy = targetY - capturedShip.y;
                     const dist = Math.hypot(dx, dy);
@@ -909,14 +2325,14 @@
                         player.x = Math.min(WIDTH - 48, player.x);
                         isDualShip = true;
                         capturedShip = null;
-                        score += 1000;
-                        statusBannerText = 'DUAL FIGHTER READY!';
+                        addScore(1000, player.x + 14, player.y - 24, PALETTE.Y);
+                        statusBannerText = 'DUAL FIGHTER!';
                         statusBannerColor = PALETTE.Y;
                         statusBannerTimer = 85;
-                        playSfx(980, 'square', 0.4);
+                        GalagaSound.playBonusChime();
                     } else {
-                        capturedShip.x += (dx / Math.max(1, dist)) * 3.0;
-                        capturedShip.y += (dy / Math.max(1, dist)) * 3.0;
+                        capturedShip.x += (dx / Math.max(1, dist)) * 3.8;
+                        capturedShip.y += (dy / Math.max(1, dist)) * 3.8;
                     }
                 }
             }
@@ -927,12 +2343,17 @@
             for (let ei = enemies.length - 1; ei >= 0; ei--) {
                 const e = enemies[ei];
                 e.update();
+                if (e.state === 'done') {
+                    enemies.splice(ei, 1);
+                    continue;
+                }
+                if (e.state === 'wait') continue;
                 if (gameActive && player && !player.exploding && !player.capturing && !player.captured && player.invulnerable <= 0) {
-                    const hitPrimary = Math.hypot(e.x - player.x, e.y - player.y) < 20;
-                    const hitDual = isDualShip && Math.hypot(e.x - (player.x + 28), e.y - player.y) < 20;
+                    const hitPrimary = Math.hypot(e.x - player.x, e.y - player.y) < 19;
+                    const hitDual = isDualShip && Math.hypot(e.x - (player.x + 28), e.y - player.y) < 19;
                     if (hitPrimary || hitDual) {
-                        createExplosion(e.x, e.y, 20);
-                        playSfx(100, 'triangle', 0.2);
+                        createExplosion(e.x, e.y, 18);
+                        GalagaSound.playEnemyDestroy(e.type);
                         enemies.splice(ei, 1);
                         handlePlayerHit(hitDual && !hitPrimary);
                         continue;
@@ -940,17 +2361,18 @@
                 }
             }
 
-            // Enemy bullets update & player collision
+            // Enemy aimed bullets update & player collision
             for (let bi = enemyBullets.length - 1; bi >= 0; bi--) {
                 const eb = enemyBullets[bi];
-                eb.y += 3.2;
-                if (eb.y > HEIGHT + 20) {
+                eb.x += (eb.vx ?? 0);
+                eb.y += (eb.vy ?? 3.4);
+                if (eb.y > HEIGHT + 20 || eb.x < -20 || eb.x > WIDTH + 20) {
                     enemyBullets.splice(bi, 1);
                     continue;
                 }
                 if (gameActive && player && !player.exploding && !player.capturing && !player.captured && player.invulnerable <= 0) {
-                    const hitPrimary = Math.hypot(eb.x - player.x, eb.y - player.y) < 16;
-                    const hitDual = isDualShip && Math.hypot(eb.x - (player.x + 28), eb.y - player.y) < 16;
+                    const hitPrimary = Math.hypot(eb.x - player.x, eb.y - player.y) < 15;
+                    const hitDual = isDualShip && Math.hypot(eb.x - (player.x + 28), eb.y - player.y) < 15;
                     if (hitPrimary || hitDual) {
                         enemyBullets.splice(bi, 1);
                         handlePlayerHit(hitDual && !hitPrimary);
@@ -958,7 +2380,34 @@
                 }
             }
 
-            // Particles update
+            updateEffects();
+
+            // Stage completion -> Challenging Stage Tally OR next stage
+            if (enemies.length === 0 && !capturedShip) {
+                if (isChallengingStage) {
+                    const isPerfect = challengingHits >= 40;
+                    challengingResult = {
+                        timer: 0,
+                        hits: challengingHits,
+                        shownHits: 0,
+                        bonus: isPerfect ? 10000 : challengingHits * 100,
+                        isPerfect,
+                        awarded: false
+                    };
+                    enemyBullets = [];
+                    tractorBeam = null;
+                } else {
+                    level++;
+                    enemyBullets = [];
+                    tractorBeam = null;
+                    spawnWave();
+                }
+            }
+
+            syncScoreHUD();
+        }
+
+        function updateEffects() {
             for (let pi = particles.length - 1; pi >= 0; pi--) {
                 const p = particles[pi];
                 p.x += p.vx;
@@ -966,14 +2415,24 @@
                 p.life -= p.decay;
                 if (p.life <= 0) particles.splice(pi, 1);
             }
-
-            if (enemies.length === 0) {
-                level++;
-                enemyBullets = [];
-                tractorBeam = null;
-                spawnWave();
+            for (let xi = explosions.length - 1; xi >= 0; xi--) {
+                const ex = explosions[xi];
+                ex.tick++;
+                if (ex.tick >= ex.ticksPerFrame) {
+                    ex.tick = 0;
+                    ex.frame++;
+                    if (ex.frame >= ex.maxFrames) explosions.splice(xi, 1);
+                }
             }
+            for (let si = scorePopups.length - 1; si >= 0; si--) {
+                const sp = scorePopups[si];
+                sp.y -= 0.35;
+                sp.timer--;
+                if (sp.timer <= 0) scorePopups.splice(si, 1);
+            }
+        }
 
+        function syncScoreHUD() {
             document.getElementById('score-display').innerText = score.toString().padStart(2, '0');
             if (score > highScore) {
                 highScore = score;
@@ -981,24 +2440,91 @@
             }
         }
 
+        // =========================================================================
+        // AUTHENTIC 1981 STAGE FLAGS (50, 30, 20, 10, 5, 1 PENNANTS)
+        // =========================================================================
+        function decomposeStageFlags(lvl) {
+            let rem = Math.max(1, lvl);
+            const denoms = [50, 30, 20, 10, 5, 1];
+            const flags = [];
+            for (let i = 0; i < denoms.length; i++) {
+                while (rem >= denoms[i]) {
+                    flags.push(denoms[i]);
+                    rem -= denoms[i];
+                }
+            }
+            return flags;
+        }
+
+        function drawStageFlags(lvl) {
+            const flags = decomposeStageFlags(lvl);
+            let cursorX = WIDTH - 14;
+            const by = HEIGHT - 28;
+            // Draw right-to-left (smallest flags on right, large pennants on left, matching arcade)
+            for (let i = flags.length - 1; i >= 0; i--) {
+                const val = flags[i];
+                const isBig = val >= 10;
+                const w = isBig ? 22 : 12;
+                cursorX -= w;
+                if (cursorX < 140) break;
+
+                if (val === 50) {
+                    ctx.fillStyle = PALETTE.Y; ctx.fillRect(cursorX, by, 20, 18);
+                    ctx.fillStyle = PALETTE.R; ctx.fillRect(cursorX + 2, by + 2, 16, 10);
+                    ctx.fillStyle = PALETTE.B; ctx.fillRect(cursorX + 5, by + 4, 10, 6);
+                    ctx.fillStyle = PALETTE.W; ctx.fillRect(cursorX, by + 18, 3, 6);
+                } else if (val === 30) {
+                    ctx.fillStyle = PALETTE.Y; ctx.fillRect(cursorX, by, 20, 16);
+                    ctx.fillStyle = PALETTE.R; ctx.fillRect(cursorX + 3, by + 3, 14, 10);
+                    ctx.fillStyle = PALETTE.W; ctx.fillRect(cursorX, by + 16, 3, 8);
+                } else if (val === 20) {
+                    ctx.fillStyle = PALETTE.C; ctx.fillRect(cursorX, by, 20, 16);
+                    ctx.fillStyle = PALETTE.R; ctx.fillRect(cursorX + 3, by + 3, 14, 10);
+                    ctx.fillStyle = PALETTE.W; ctx.fillRect(cursorX, by + 16, 3, 8);
+                } else if (val === 10) {
+                    ctx.fillStyle = PALETTE.R; ctx.fillRect(cursorX, by, 18, 14);
+                    ctx.fillStyle = PALETTE.Y; ctx.fillRect(cursorX + 2, by + 2, 14, 10);
+                    ctx.fillStyle = PALETTE.R; ctx.fillRect(cursorX + 5, by + 5, 8, 4);
+                    ctx.fillStyle = PALETTE.W; ctx.fillRect(cursorX, by + 14, 3, 10);
+                } else if (val === 5) {
+                    ctx.fillStyle = PALETTE.Y; ctx.fillRect(cursorX, by + 2, 10, 12);
+                    ctx.fillStyle = PALETTE.B; ctx.fillRect(cursorX + 2, by + 4, 8, 6);
+                    ctx.fillStyle = PALETTE.W; ctx.fillRect(cursorX, by + 14, 2, 10);
+                } else {
+                    ctx.fillStyle = PALETTE.R; ctx.fillRect(cursorX, by + 4, 10, 10);
+                    ctx.fillStyle = PALETTE.Y; ctx.fillRect(cursorX + 2, by + 6, 6, 4);
+                    ctx.fillStyle = PALETTE.W; ctx.fillRect(cursorX, by + 14, 2, 10);
+                }
+                cursorX -= 4;
+            }
+        }
+
+        // =========================================================================
+        // RENDERER
+        // =========================================================================
         function draw() {
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-            // Stars
-            stars.forEach(s => { ctx.fillStyle = s.color; ctx.fillRect(s.x, s.y, 2, 2); });
+            // Authentic twinkling Galaga multi-layer starfield
+            stars.forEach(s => {
+                if (((frame + s.blinkOffset) % 44) < 34) {
+                    ctx.fillStyle = s.color;
+                    ctx.fillRect(s.x, s.y, 2, 2);
+                }
+            });
 
             if (gameActive || player) {
-                // Authentic 1981 Namco striped tractor beam cone
+                // Authentic 1981 Namco striped concentric Tractor Beam cone
                 if (tractorBeam && tractorBeam.h > 0) {
-                    const bands = Math.floor(tractorBeam.h / 8);
+                    const bands = Math.floor(tractorBeam.h / 7);
                     const beamColors = [PALETTE.B, PALETTE.C, PALETTE.V, PALETTE.W];
                     for (let b = 0; b < bands; b++) {
-                        const by = tractorBeam.y + b * 8;
-                        const progress = (b * 8) / tractorBeam.maxH;
-                        const halfW = 8 + progress * 34;
-                        ctx.fillStyle = beamColors[(b + Math.floor(frame / 4)) % beamColors.length];
-                        ctx.fillRect(tractorBeam.x - halfW, by, halfW * 2, 5);
+                        const by = tractorBeam.y + b * 7;
+                        const progress = (b * 7) / tractorBeam.maxH;
+                        const halfW = 8 + progress * 36;
+                        ctx.fillStyle = beamColors[(b + Math.floor(frame / 3)) % beamColors.length];
+                        ctx.fillRect(tractorBeam.x - halfW, by, halfW * 2, 4);
                     }
                 }
 
@@ -1008,32 +2534,34 @@
                 }
                 enemies.forEach(e => e.draw());
 
-                if (statusBannerTimer > 0 && statusBannerText && ctx.fillText) {
-                    ctx.fillStyle = statusBannerColor;
-                    ctx.font = 'bold 16px "Courier New", monospace';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(statusBannerText, WIDTH / 2, HEIGHT / 2 + 24);
-                }
+                // Multi-frame arcade pixel starburst explosions
+                explosions.forEach(ex => {
+                    const sprite = EXPLOSION_ENEMY_FRAMES[Math.min(ex.frame, EXPLOSION_ENEMY_FRAMES.length - 1)];
+                    drawSprite(sprite, ex.x, ex.y, 0, ex.scale);
+                });
 
-                // Player bullets (arcade blue tip + red tail)
+                // Player bullets (authentic blue nose + white core + red tail)
                 bullets.forEach(b => {
                     ctx.fillStyle = PALETTE.B;
                     ctx.fillRect(b.x - 1, b.y - 12, 2, 4);
                     ctx.fillRect(b.x - 3, b.y - 8, 6, 4);
+                    ctx.fillStyle = PALETTE.W;
+                    ctx.fillRect(b.x - 1, b.y - 8, 2, 4);
                     ctx.fillStyle = PALETTE.R;
                     ctx.fillRect(b.x - 1, b.y - 4, 2, 8);
                 });
 
-                // Enemy bullets (arcade white shaft + red tip)
+                // Enemy bullets (authentic white shaft + red/yellow tip)
                 enemyBullets.forEach(b => {
                     ctx.fillStyle = PALETTE.W;
                     ctx.fillRect(b.x - 1, b.y - 8, 2, 8);
                     ctx.fillStyle = PALETTE.R;
                     ctx.fillRect(b.x - 3, b.y, 6, 2);
+                    ctx.fillStyle = PALETTE.Y;
                     ctx.fillRect(b.x - 1, b.y + 2, 2, 4);
                 });
 
-                // Particles
+                // Sparks
                 particles.forEach(p => {
                     ctx.fillStyle = p.color;
                     ctx.globalAlpha = Math.max(0, p.life);
@@ -1041,24 +2569,57 @@
                 });
                 ctx.globalAlpha = 1.0;
 
+                // Floating arcade bonus score popups (400, 800, 1000, 1600, 2000, 3000)
+                if (ctx.fillText) {
+                    ctx.font = 'bold 13px "Courier New", monospace';
+                    ctx.textAlign = 'center';
+                    scorePopups.forEach(sp => {
+                        ctx.fillStyle = sp.color;
+                        ctx.fillText(sp.text, sp.x, sp.y);
+                    });
+                }
+
+                // Stage / Status banners
+                if (statusBannerTimer > 0 && statusBannerText && ctx.fillText) {
+                    ctx.textAlign = 'center';
+                    ctx.font = 'bold 17px "Courier New", monospace';
+                    if (level === 1 && stageIntroTimer > 0 && statusBannerText === 'STAGE 1') {
+                        ctx.fillStyle = PALETTE.C;
+                        ctx.fillText('PLAYER 1', WIDTH / 2, HEIGHT / 2 - 6);
+                        if (stageIntroTimer <= 130) {
+                            ctx.fillStyle = PALETTE.Y;
+                            ctx.fillText('STAGE 1', WIDTH / 2, HEIGHT / 2 + 22);
+                        }
+                    } else {
+                        ctx.fillStyle = statusBannerColor;
+                        ctx.fillText(statusBannerText, WIDTH / 2, HEIGHT / 2 + 12);
+                    }
+                }
+
+                // Authentic Challenging Stage Tally Screen
+                if (challengingResult && ctx.fillText) {
+                    ctx.textAlign = 'center';
+                    ctx.font = 'bold 16px "Courier New", monospace';
+                    if (challengingResult.isPerfect && challengingResult.awarded) {
+                        ctx.fillStyle = (Math.floor(frame / 8) % 2 === 0) ? PALETTE.R : PALETTE.Y;
+                        ctx.fillText('PERFECT !', WIDTH / 2, HEIGHT / 2 - 42);
+                    }
+                    ctx.fillStyle = PALETTE.C;
+                    ctx.fillText(`NUMBER OF HITS    ${String(challengingResult.shownHits).padStart(2, ' ')}`, WIDTH / 2, HEIGHT / 2);
+                    if (challengingResult.awarded) {
+                        ctx.fillStyle = PALETTE.Y;
+                        const label = challengingResult.isPerfect ? 'SPECIAL BONUS' : 'BONUS';
+                        ctx.fillText(`${label}  ${challengingResult.bonus}`, WIDTH / 2, HEIGHT / 2 + 34);
+                    }
+                }
+
                 // Reserve ships HUD (bottom-left)
-                for (let i = 0; i < lives - 1; i++) {
-                    drawSprite(SPRITES.player, 20 + i * 32, HEIGHT - 18, 0, 1.8);
+                for (let i = 0; i < Math.min(Math.max(0, lives - 1), 6); i++) {
+                    drawSprite(SPRITES.player, 20 + i * 30, HEIGHT - 18, 0, 1.75);
                 }
-                // Stage badges (bottom-right, matching arcade red/white/blue chevron)
-                for (let i = 0; i < Math.min(level, 10); i++) {
-                    const bx = WIDTH - 20 - i * 16, by = HEIGHT - 28;
-                    ctx.fillStyle = PALETTE.W;
-                    ctx.fillRect(bx, by, 14, 16);
-                    ctx.fillStyle = PALETTE.R;
-                    ctx.fillRect(bx, by + 2, 14, 4);
-                    ctx.fillRect(bx, by + 8, 14, 4);
-                    ctx.fillStyle = PALETTE.V;
-                    ctx.fillRect(bx + 2, by + 14, 10, 4);
-                    ctx.fillStyle = PALETTE.W;
-                    ctx.fillRect(bx + 6, by + 14, 2, 2);
-                    ctx.fillRect(bx + 4, by + 18, 6, 4);
-                }
+
+                // Authentic 1981 Stage Flags (bottom-right: 50/30/20/10/5/1)
+                drawStageFlags(level);
             }
         }
 
@@ -1083,10 +2644,12 @@
             requestAnimationFrame(loop);
         }
 
+        // =========================================================================
+        // INPUT HANDLING (KEYBOARD, TOUCH, CRKD ATOM / W3C GAMEPAD)
+        // =========================================================================
         const keys = {};
         const touchState = { left: false, right: false, fire: false };
         const gamepadState = { left: false, right: false, fire: false, connected: false, name: '' };
-        // Default to normal (false), or load saved preference from localStorage; toggle anytime via [⇄ L/R] or Select (-)
         let controllerInvertX = false;
         try {
             if (typeof localStorage !== 'undefined' && localStorage.getItem('galaga_invert_lr') !== null) {
@@ -1097,10 +2660,7 @@
         let prevGamepadSelectPressed = false;
 
         function ensureAudio() {
-            try {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-            } catch (e) {}
+            GalagaSound.unlock();
         }
 
         function syncFlipButtonUI() {
@@ -1127,7 +2687,18 @@
             playSfx(controllerInvertX ? 880 : 660, 'square', 0.07);
         }
 
-        // Normalize keyboard + Android Gamepad / CRKD ATOM Keyboard-mode key events
+        function toggleSoundMute() {
+            soundMuted = !soundMuted;
+            if (soundMuted) GalagaSound.stopAll();
+            const btn = document.getElementById('sound-btn');
+            if (btn) {
+                btn.innerText = soundMuted ? '🔇 MUTED' : '🔊 SFX';
+                btn.style.borderColor = soundMuted ? '#ff5555' : '#00ffff';
+                btn.style.color = soundMuted ? '#ff5555' : '#00ffff';
+            }
+            if (!soundMuted) GalagaSound.playCoin();
+        }
+
         function resolveKeyCodes(e) {
             const codes = [];
             if (e && e.code) codes.push(e.code);
@@ -1136,17 +2707,9 @@
             if (k === 'ArrowLeft' || kc === 21 || kc === 37) codes.push('ArrowLeft');
             if (k === 'ArrowRight' || kc === 22 || kc === 39) codes.push('ArrowRight');
             if (k === ' ' || k === 'Enter' ||
-                kc === 23 || // KEYCODE_DPAD_CENTER
-                kc === 66 || // KEYCODE_ENTER
-                kc === 96 || // KEYCODE_BUTTON_A
-                kc === 97 || // KEYCODE_BUTTON_B
-                kc === 99 || // KEYCODE_BUTTON_X
-                kc === 100 || // KEYCODE_BUTTON_Y
-                kc === 102 || // KEYCODE_BUTTON_L1
-                kc === 103 || // KEYCODE_BUTTON_R1
-                kc === 104 || // KEYCODE_BUTTON_L2
-                kc === 105 || // KEYCODE_BUTTON_R2
-                kc === 108) { // KEYCODE_BUTTON_START
+                kc === 23 || kc === 66 || kc === 96 || kc === 97 ||
+                kc === 99 || kc === 100 || kc === 102 || kc === 103 ||
+                kc === 104 || kc === 105 || kc === 108) {
                 codes.push('Space');
             }
             return codes;
@@ -1156,6 +2719,7 @@
             ensureAudio();
             const matched = resolveKeyCodes(e);
             matched.forEach(c => { keys[c] = true; });
+            if (e && (e.code === 'KeyM')) toggleSoundMute();
             if (!gameActive && (matched.includes('Space') || matched.includes('Enter') || (e && e.keyCode === 108))) {
                 if (e && e.preventDefault) e.preventDefault();
                 startGame();
@@ -1166,8 +2730,6 @@
             matched.forEach(c => { keys[c] = false; });
         };
 
-        // Full W3C Gamepad API polling for CRKD ATOM Collectible Keychain Controller
-        // Supports Android Mode (Cyan), X-Input Mode (Orange), Switch Mode (White), and Stick-Remap modes
         function isBtnPressed(btn) {
             if (!btn) return false;
             if (typeof btn === 'object') return Boolean(btn.pressed || (btn.value && btn.value > 0.35));
@@ -1208,12 +2770,9 @@
                 const btns = gp.buttons || [];
                 const axes = gp.axes || [];
 
-                // 1. D-Pad Left / Right (Standard buttons 14 = Left, 15 = Right)
                 if (isBtnPressed(btns[14])) left = true;
                 if (isBtnPressed(btns[15])) right = true;
 
-                // 2. Analog Axes / CRKD ATOM D-Pad-to-Stick modes:
-                //    axes[0] = Left Stick X, axes[2] = Right Stick X, axes[4] / axes[6] = Android D-Input D-Pad X
                 const horizAxes = [axes[0], axes[2], axes[4], axes[6]];
                 for (let ai = 0; ai < horizAxes.length; ai++) {
                     const val = horizAxes[ai];
@@ -1223,14 +2782,12 @@
                     }
                 }
 
-                // 3. DirectInput / Switch Mode 8-way POV Hat Switch on axes[9] (Android Chrome HID mapping)
                 if (axes.length >= 10 && typeof axes[9] === 'number') {
                     const hat = axes[9];
                     if (hat >= -0.80 && hat <= -0.05) right = true;
                     if (hat >= 0.35 && hat <= 1.05) left = true;
                 }
 
-                // 4. Fire buttons: CRKD ATOM B/A/Y/X face buttons (0, 1, 2, 3) + L/R shoulder buttons (4, 5, 6, 7)
                 if (isBtnPressed(btns[0]) || isBtnPressed(btns[1]) ||
                     isBtnPressed(btns[2]) || isBtnPressed(btns[3]) ||
                     isBtnPressed(btns[4]) || isBtnPressed(btns[5]) ||
@@ -1238,20 +2795,11 @@
                     fire = true;
                 }
 
-                // Select (-) button (8) toggles L/R direction
-                if (isBtnPressed(btns[8])) {
-                    selectBtn = true;
-                }
-
-                // 5. Start (+), CRKD Home (9, 16) or any face button starts game from menu
-                if (isBtnPressed(btns[9]) || isBtnPressed(btns[16]) || fire) {
-                    startBtn = true;
-                }
+                if (isBtnPressed(btns[8])) selectBtn = true;
+                if (isBtnPressed(btns[9]) || isBtnPressed(btns[16]) || fire) startBtn = true;
             }
 
-            if (selectBtn && !prevGamepadSelectPressed) {
-                toggleInvertLR();
-            }
+            if (selectBtn && !prevGamepadSelectPressed) toggleInvertLR();
             prevGamepadSelectPressed = selectBtn;
 
             if (foundPad && !gamepadState.connected) {
@@ -1275,7 +2823,6 @@
             gamepadState.right = right;
             gamepadState.fire = fire;
 
-            // Reflect physical controller input on the corner HUD indicators if visible
             const lEl = document.getElementById('l-btn');
             const rEl = document.getElementById('r-btn');
             const fEl = document.getElementById('f-btn');
@@ -1283,7 +2830,6 @@
             if (rEl && rEl.classList && !touchState.right) rEl.classList.toggle('active', right);
             if (fEl && fEl.classList && !touchState.fire) fEl.classList.toggle('active', fire);
 
-            // Edge-triggered start from menu overlay when pressing Start / B / A / Y / X on CRKD ATOM
             if (startBtn && !prevGamepadStartPressed && !gameActive) {
                 ensureAudio();
                 startGame();
@@ -1306,6 +2852,7 @@
                 updateGamepadStatusUI(false);
             });
         }
+
         function setBtnState(el, k, state) {
             touchState[k] = state;
             if (el && el.classList) el.classList.toggle('active', state);
@@ -1331,7 +2878,6 @@
         }
         bind('l-btn', 'left'); bind('r-btn', 'right'); bind('f-btn', 'fire');
 
-        // Allow smooth thumb sliding between Left and Right buttons on the D-pad
         const dpadGroup = document.getElementById('dpad-group');
         if (dpadGroup) {
             const handleDpadTouch = e => {
@@ -1365,28 +2911,40 @@
         }
 
         function startGame() {
+            ensureAudio();
+            GalagaSound.stopAll();
             score = 0;
             level = 1;
             lives = 3;
+            shotsFired = 0;
+            hitsLanded = 0;
+            nextExtraLife = 20000;
             isDualShip = false;
             tractorBeam = null;
             capturedShip = null;
+            challengingResult = null;
             statusBannerTimer = 0;
             bullets = [];
             enemyBullets = [];
             particles = [];
+            explosions = [];
+            scorePopups = [];
             player = new Player();
             spawnWave();
             gameActive = true;
             document.getElementById('score-display').innerText = '00';
             const livesEl = document.getElementById('lives-display');
             if (livesEl) livesEl.innerText = '3';
+            const label1up = document.getElementById('label-1up');
+            if (label1up && label1up.classList) label1up.classList.add('blink-active');
             const titleEl = document.getElementById('menu-title');
-            if (titleEl) titleEl.innerText = 'Galaga';
+            if (titleEl) titleEl.innerText = 'GALAGA';
             const subEl = document.getElementById('menu-sub');
-            if (subEl) subEl.innerText = 'AUTHENTIC REPLICA';
+            if (subEl) subEl.innerText = '1981 NAMCO ARCADE';
             const btnEl = document.getElementById('start-btn');
             if (btnEl) btnEl.innerText = 'START GAME';
+            const resPanel = document.getElementById('results-panel');
+            if (resPanel && resPanel.style) resPanel.style.display = 'none';
             document.getElementById('menu-overlay').style.display = 'none';
         }
 
@@ -1423,6 +2981,14 @@
                 if (e && e.stopPropagation) e.stopPropagation();
                 ensureAudio();
                 toggleInvertLR();
+            };
+        }
+        const soundBtnEl = document.getElementById('sound-btn');
+        if (soundBtnEl) {
+            soundBtnEl.onclick = e => {
+                if (e && e.stopPropagation) e.stopPropagation();
+                ensureAudio();
+                toggleSoundMute();
             };
         }
         const gpStatusEl = document.getElementById('gamepad-status');

@@ -226,14 +226,29 @@ function testAuthenticSpritesAndBossTwoHit() {
     assert.strictEqual(vm.runInContext('enemies.length', context), 2, 'Boss Galaga should survive 1st hit');
     assert.strictEqual(vm.runInContext('enemies[0].hp', context), 1, 'Boss Galaga HP should be 1 after 1st hit');
 
-    // Hit Boss Galaga a second time -> should be destroyed and award 400 pts
+    // Hit Boss Galaga a second time in formation -> should be destroyed and award 150 pts (authentic 1981 scoring)
     vm.runInContext(`
         bullets = [{ x: enemies[0].x, y: enemies[0].y + 4 }];
         update();
     `, context);
     assert.strictEqual(vm.runInContext('enemies.length', context), 1, 'Boss Galaga should be destroyed on 2nd hit');
-    assert.strictEqual(vm.runInContext('score', context), 400, 'Destroying Boss Galaga should award 400 points');
-    console.log('PASS: Authentic sprites, formation, and 2-hit Boss Galaga verified.');
+    assert.strictEqual(vm.runInContext('score', context), 150, 'Destroying Boss Galaga in formation should award 150 points');
+
+    // Verify diving Boss Galaga scoring: solo = 400, 1 escort = 800, 2 escorts = 1600
+    vm.runInContext(`
+        score = 0;
+        const b1 = new Enemy(200, 160, 'boss', 0);
+        b1.x = 200; b1.y = 160; b1.hp = 1; b1.state = 'dive';
+        const esc1 = new Enemy(166, 190, 'butterfly', 0);
+        esc1.state = 'escort'; esc1.escortLeader = b1; esc1.x = 166; esc1.y = 190;
+        const esc2 = new Enemy(234, 190, 'butterfly', 0);
+        esc2.state = 'escort'; esc2.escortLeader = b1; esc2.x = 234; esc2.y = 190;
+        enemies = [b1, esc1, esc2, new Enemy(400, 100, 'bee', 999)];
+        bullets = [{ x: 200, y: 164 }];
+        update();
+    `, context);
+    assert.strictEqual(vm.runInContext('score', context), 1600, 'Destroying diving Boss Galaga with 2 escorts should award 1600 points');
+    console.log('PASS: Authentic sprites, formation, 2-hit Boss Galaga, and convoy scoring verified.');
 }
 
 function testCrkdAtomControllerSupport() {
@@ -356,7 +371,7 @@ async function testSeparatePwaIsolation() {
             clients: { claim: () => {} }
         },
         caches: {
-            keys: () => Promise.resolve(['galaga-arcade-v4', 'galaga-arcade-v5', 'space-invaders-arcade-v6']),
+            keys: () => Promise.resolve(['galaga-arcade-v6', 'galaga-arcade-v7', 'space-invaders-arcade-v6']),
             delete: (k) => { deletedCaches.push(k); return Promise.resolve(true); }
         },
         Promise
@@ -365,8 +380,126 @@ async function testSeparatePwaIsolation() {
     let waitPromise = null;
     activateHandler({ waitUntil: p => { waitPromise = p; } });
     await waitPromise;
-    assert.deepStrictEqual(deletedCaches, ['galaga-arcade-v4'], 'Galaga SW must only delete old galaga-arcade-* caches and preserve Space Invaders cache');
+    assert.deepStrictEqual(deletedCaches, ['galaga-arcade-v6'], 'Galaga SW must only delete old galaga-arcade-* caches and preserve Space Invaders cache');
     console.log('PASS: Galaga PWA manifest, SW cache isolation, and storage key isolation verified.');
+}
+
+function testTwoShotLimitAndResultsTracking() {
+    console.log('Testing: Authentic 2-shot limit per fighter and Results accuracy tracking...');
+    const { context, elements } = setupEnvironment();
+    elements['start-btn'].onclick();
+
+    // Hold Space and advance frames - single fighter must never exceed 2 bullets on screen
+    vm.runInContext(`
+        enemies = [new Enemy(400, 100, 'bee', 999)];
+        keys['Space'] = true;
+        for (let i = 0; i < 30; i++) update();
+        keys['Space'] = false;
+    `, context);
+    const singleCount = vm.runInContext('bullets.length', context);
+    assert(singleCount <= 2 && singleCount >= 1, `Single fighter must cap active bullets at 2, got ${singleCount}`);
+
+    // Dual fighter must cap at 4 bullets (2 pairs)
+    vm.runInContext(`
+        bullets = [];
+        isDualShip = true;
+        player.cooldown = 0;
+        keys['Space'] = true;
+        for (let i = 0; i < 30; i++) update();
+        keys['Space'] = false;
+    `, context);
+    const dualCount = vm.runInContext('bullets.length', context);
+    assert(dualCount <= 4 && dualCount >= 2, `Dual fighter must cap active bullets at 4, got ${dualCount}`);
+    assert(vm.runInContext('shotsFired', context) > 0, 'shotsFired must be tracked');
+    console.log('PASS: 2-shot cap per fighter and shot/hit tracking verified.');
+}
+
+function testChallengingStageTransformsExtraLifeAndFlags() {
+    console.log('Testing: Challenging Stage, Transform sprites/bonuses, Extra Life (1UP), Stage Flags & Namco WSG audio...');
+    const { context, elements } = setupEnvironment();
+    elements['start-btn'].onclick();
+
+    // 1. Challenging Stage on Stage 3 spawns 40 targets across 5 waves of 8
+    vm.runInContext('level = 3; spawnWave();', context);
+    assert.strictEqual(vm.runInContext('isChallengingStage', context), true, 'Stage 3 must be a Challenging Stage');
+    assert.strictEqual(vm.runInContext('enemies.length', context), 40, 'Challenging Stage must spawn 40 targets');
+
+    // Simulate clearing all 40 targets -> triggers PERFECT 10,000 bonus
+    vm.runInContext(`
+        challengingHits = 40;
+        enemies = [];
+        score = 0;
+        update();
+        for (let i = 0; i < 120; i++) update();
+    `, context);
+    assert.strictEqual(vm.runInContext('score', context), 10000, '40/40 Challenging Stage must award 10000 Perfect bonus');
+
+    // 2. Transform sprites & stage rotation (Stage 4 Scorpion, Stage 8 Bosconian, Stage 12 Galaxian)
+    const tChecks = vm.runInContext(`({
+        s4: getTransformTypeForLevel(4),
+        s8: getTransformTypeForLevel(8),
+        s12: getTransformTypeForLevel(12),
+        hasScorpion: Array.isArray(SPRITES.scorpion) && SPRITES.scorpion.length === 2,
+        hasBosconian: Array.isArray(SPRITES.bosconian) && SPRITES.bosconian.length === 2,
+        hasGalaxian: Array.isArray(SPRITES.galaxian) && SPRITES.galaxian.length === 2
+    })`, context);
+    assert.strictEqual(tChecks.s4.type, 'scorpion');
+    assert.strictEqual(tChecks.s4.bonus, 1000);
+    assert.strictEqual(tChecks.s8.type, 'bosconian');
+    assert.strictEqual(tChecks.s8.bonus, 2000);
+    assert.strictEqual(tChecks.s12.type, 'galaxian');
+    assert.strictEqual(tChecks.s12.bonus, 3000);
+    assert(tChecks.hasScorpion && tChecks.hasBosconian && tChecks.hasGalaxian, 'All 3 authentic transform sprites must exist');
+
+    // 3. Extra life at 20,000 pts and again at 70,000 pts
+    vm.runInContext('lives = 3; score = 0; nextExtraLife = 20000; addScore(20000);', context);
+    assert.strictEqual(vm.runInContext('lives', context), 4, 'Reaching 20000 pts must award 1st extra life');
+    vm.runInContext('addScore(50000);', context);
+    assert.strictEqual(vm.runInContext('lives', context), 5, 'Reaching 70000 pts must award 2nd extra life');
+
+    // 4. Authentic Stage Flags decomposition (50/30/20/10/5/1)
+    const flags68 = Array.from(vm.runInContext('decomposeStageFlags(68)', context));
+    assert.deepStrictEqual(flags68, [50, 10, 5, 1, 1, 1], 'Stage 68 should decompose into [50, 10, 5, 1, 1, 1]');
+
+    // 5. Authentic 1981 Namco WSG ROM Sound Engine verification across all 24 sounds (0..23)
+    const wsgSummary = vm.runInContext(`(() => {
+        const res = [];
+        for (let sid = 0; sid < 24; sid++) {
+            const pcm = GalagaSound.renderPCM(sid, 22050);
+            let peak = 0;
+            for (let i = 0; i < pcm.length; i++) {
+                const a = Math.abs(pcm[i]);
+                if (Number.isNaN(a)) return { error: 'NaN in sound ' + sid };
+                if (a > peak) peak = a;
+            }
+            res.push({ sid, len: pcm.length, peak });
+        }
+        GalagaSound.playCoin();
+        GalagaSound.playStartTheme();
+        GalagaSound.playChallengingStart();
+        GalagaSound.playChallengingClear(true);
+        GalagaSound.playCapturedTheme();
+        GalagaSound.playRescuedTheme();
+        GalagaSound.playExtraLife();
+        GalagaSound.playShot();
+        GalagaSound.playDive();
+        GalagaSound.playBossHit1();
+        GalagaSound.playEnemyDestroy('boss');
+        GalagaSound.playPlayerExplosion();
+        GalagaSound.playTransformSplit();
+        GalagaSound.playBonusChime();
+        GalagaSound.syncLoops(true, false, 0);
+        GalagaSound.syncLoops(false, false, 5);
+        GalagaSound.syncLoops(false, false, 6);
+        GalagaSound.playGameOver(true);
+        draw();
+        return { count: res.length, minLen: Math.min(...res.map(r => r.len)), minPeak: Math.min(...res.map(r => r.peak)) };
+    })()`, context);
+    assert(!wsgSummary.error, wsgSummary.error || '');
+    assert.strictEqual(wsgSummary.count, 24, 'All 24 original 1981 Galaga WSG ROM sounds must synthesize');
+    assert(wsgSummary.minLen > 1000, `Expected non-empty PCM for all 24 sounds, got minLen=${wsgSummary.minLen}`);
+    assert(wsgSummary.minPeak > 0.1, `Expected audible PCM for all 24 sounds, got minPeak=${wsgSummary.minPeak}`);
+    console.log('PASS: Challenging Stage, Transforms, Extra Life, Stage Flags, and all 24 authentic 1981 WSG ROM sounds verified.');
 }
 
 (async () => {
@@ -378,6 +511,8 @@ async function testSeparatePwaIsolation() {
         testAuthenticSpritesAndBossTwoHit();
         testCrkdAtomControllerSupport();
         testTractorBeamCaptureAndDualFighterRescue();
+        testTwoShotLimitAndResultsTracking();
+        testChallengingStageTransformsExtraLifeAndFlags();
         await testSeparatePwaIsolation();
         console.log('\nAll tests passed successfully!');
     } catch (e) {
