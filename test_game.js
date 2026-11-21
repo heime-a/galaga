@@ -322,17 +322,32 @@ function testTractorBeamCaptureAndDualFighterRescue() {
     assert.strictEqual(vm.runInContext('lives', context), 2, 'Capturing a ship should deduct 1 reserve life and spawn next fighter');
     assert.strictEqual(vm.runInContext('player.captured', context), false, 'Replacement fighter should be active on playfield');
 
-    // Now shoot the Boss twice (2 hits to destroy Boss) to rescue the captured fighter
-    vm.runInContext(`
+    // Verify captured fighter rides ABOVE/BEHIND a downward-diving Boss (angle=PI), never below it as a shield!
+    const capCheck = vm.runInContext(`(() => {
         enemies[0].x = WIDTH / 2;
-        enemies[0].y = 140;
+        enemies[0].y = 180;
         enemies[0].state = 'dive';
-        bullets.push({ x: WIDTH / 2, y: 142 });
-        bullets.push({ x: WIDTH / 2, y: 144 });
-        update();
+        enemies[0].phase = 0.5;
+        enemies[0].angle = Math.PI;
+        return enemies[0].getCapturedPos();
+    })()`, context);
+    assert(capCheck.y < 180, `Captured fighter must ride ABOVE diving Boss (y < 180), got y=${capCheck.y}`);
+
+    // Now fire bullets UP from below the diving Boss (passing through y > boss.y first!) to rescue the captured fighter
+    vm.runInContext(`
+        bullets = [{ x: WIDTH / 2, y: 240 }];
+        for (let f = 0; f < 10; f++) {
+            enemies[0].x = WIDTH / 2; enemies[0].y = 180; enemies[0].angle = Math.PI;
+            update();
+        }
+        bullets = [{ x: WIDTH / 2, y: 240 }];
+        for (let f = 0; f < 10; f++) {
+            if (enemies[0]) { enemies[0].x = WIDTH / 2; enemies[0].y = 180; enemies[0].angle = Math.PI; }
+            update();
+        }
     `, context);
 
-    assert(vm.runInContext('capturedShip !== null', context), 'Destroying the Boss with a captured fighter must release capturedShip');
+    assert(vm.runInContext('capturedShip !== null', context), 'Shooting straight up at a diving Boss must hit the Boss first and release capturedShip');
 
     // Advance frames so capturedShip completes its celebration spin and docks with player
     for (let i = 0; i < 180; i++) {
@@ -371,7 +386,7 @@ async function testSeparatePwaIsolation() {
             clients: { claim: () => {} }
         },
         caches: {
-            keys: () => Promise.resolve(['galaga-arcade-v7', 'galaga-arcade-v8', 'space-invaders-arcade-v6']),
+            keys: () => Promise.resolve(['galaga-arcade-v8', 'galaga-arcade-v9', 'space-invaders-arcade-v6']),
             delete: (k) => { deletedCaches.push(k); return Promise.resolve(true); }
         },
         Promise
@@ -380,7 +395,7 @@ async function testSeparatePwaIsolation() {
     let waitPromise = null;
     activateHandler({ waitUntil: p => { waitPromise = p; } });
     await waitPromise;
-    assert.deepStrictEqual(deletedCaches, ['galaga-arcade-v7'], 'Galaga SW must only delete old galaga-arcade-* caches and preserve Space Invaders cache');
+    assert.deepStrictEqual(deletedCaches, ['galaga-arcade-v8'], 'Galaga SW must only delete old galaga-arcade-* caches and preserve Space Invaders cache');
     assert(!swCode.includes('fetch(event.request, { cache:'), 'Galaga SW must fetch by URL string so navigate requests never throw TypeError in Chrome');
     console.log('PASS: Galaga PWA manifest, SW cache isolation, and storage key isolation verified.');
 }

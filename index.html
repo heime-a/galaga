@@ -313,7 +313,7 @@
             <canvas id="gameCanvas"></canvas>
             <div id="menu-overlay">
                 <h1 id="menu-title" style="color:var(--arcade-red); font-style:italic; font-size:clamp(2.4rem, 7vmin, 3.5rem); margin:0; text-shadow:3px 3px 0 var(--arcade-blue);">GALAGA</h1>
-                <p id="menu-sub" style="color:var(--arcade-cyan); letter-spacing:4px; margin:8px 0 0;">1981 NAMCO ARCADE &bull; v8</p>
+                <p id="menu-sub" style="color:var(--arcade-cyan); letter-spacing:4px; margin:8px 0 0;">1981 NAMCO ARCADE &bull; v9</p>
                 <div id="results-panel">
                     <div style="color:var(--arcade-red); margin-bottom:6px; letter-spacing:2px;">-- RESULTS --</div>
                     <div class="res-row" style="color:var(--arcade-yellow);"><span>SHOTS FIRED</span><span id="res-shots">0</span></div>
@@ -1726,9 +1726,11 @@
                     const activeDives = enemies.filter(e => e.state === 'dive' || e.state === 'tractor' || e.state === 'escort').length;
                     const stragglerFrenzy = formationEntered && enemies.length <= 4;
                     const maxDives = stragglerFrenzy ? 4 : Math.min(2 + Math.floor((level - 1) * 0.55), 6);
-                    const diveProb = stragglerFrenzy
+                    let diveProb = stragglerFrenzy
                         ? 0.014
                         : (formationEntered ? 0.00042 : 0.00018) * (1 + (level - 1) * 0.24);
+                    // Boss holding a captured fighter dives reliably so the player gets a fair rescue chance
+                    if (this.hasCaptured && formationEntered) diveProb = Math.max(diveProb * 5, 0.0045);
 
                     if (activeDives < maxDives && Math.random() < diveProb) {
                         const canTractor = this.type === 'boss' &&
@@ -1909,6 +1911,18 @@
                 }
             }
 
+            getCapturedPos() {
+                // Authentic 1981 Galaga: captured fighter ALWAYS rides ABOVE/BEHIND the Boss,
+                // never below/in front of it, so bullets fired from below hit the Boss first!
+                const capOffset = 28;
+                if (this.state === 'dive' && this.phase >= 0.22) {
+                    const trailX = this.x - Math.sin(this.angle) * capOffset;
+                    const trailY = Math.min(this.y - 24, this.y + Math.cos(this.angle) * capOffset);
+                    return { x: trailX, y: trailY, angle: this.angle };
+                }
+                return { x: this.x, y: this.y - capOffset, angle: 0 };
+            }
+
             draw() {
                 if (this.state === 'wait' || this.state === 'done') return;
                 if (this.isRogueFighter) {
@@ -1920,10 +1934,8 @@
                 const flapSpeed = (this.state === 'formation') ? 28 : 14;
                 drawSprite(frames[Math.floor(frame / flapSpeed) % frames.length], this.x, this.y, this.angle);
                 if (this.hasCaptured) {
-                    const capOffset = 26;
-                    const capX = this.x - Math.sin(this.angle) * capOffset;
-                    const capY = this.y - Math.cos(this.angle) * capOffset;
-                    drawSprite(SPRITES.captured_player, capX, capY, this.angle);
+                    const cap = this.getCapturedPos();
+                    drawSprite(SPRITES.captured_player, cap.x, cap.y, cap.angle);
                 }
             }
         }
@@ -2192,23 +2204,7 @@
                     const e = enemies[ei];
                     if (e.state === 'wait' || e.state === 'done') continue;
 
-                    // Check accidental hit on a captured red fighter riding above its Boss
-                    if (e.hasCaptured) {
-                        const capX = e.x - Math.sin(e.angle) * 26;
-                        const capY = e.y - Math.cos(e.angle) * 26;
-                        if (Math.hypot(b.x - capX, b.y - capY) < 15) {
-                            bullets.splice(i, 1);
-                            hitsLanded++;
-                            hitSomething = true;
-                            e.hasCaptured = false;
-                            createExplosion(capX, capY, 22, true);
-                            GalagaSound.playEnemyDestroy('boss');
-                            const pts = (e.state === 'formation') ? 500 : 1000;
-                            addScore(pts, capX, capY, PALETTE.R);
-                            break;
-                        }
-                    }
-
+                    // Check Boss / Enemy hitbox FIRST so shots aimed at a diving Boss never accidentally kill the captured ship behind it
                     if (Math.hypot(b.x - e.x, b.y - e.y) < 18) {
                         bullets.splice(i, 1);
                         hitsLanded++;
@@ -2231,11 +2227,12 @@
                             }
 
                             if (e.hasCaptured) {
+                                const cap = e.getCapturedPos();
                                 if (e.state === 'formation') {
                                     // Authentic 1981 arcade: destroying Boss in formation makes captured fighter turn rogue!
-                                    const rogue = new Enemy(e.x, e.y - 26, 'bee', 0, {
-                                        startX: e.x,
-                                        startY: e.y - 26,
+                                    const rogue = new Enemy(cap.x, cap.y, 'bee', 0, {
+                                        startX: cap.x,
+                                        startY: cap.y,
                                         isRogueFighter: true
                                     });
                                     rogue.state = 'dive';
@@ -2244,7 +2241,7 @@
                                     enemies.push(rogue);
                                 } else {
                                     // Destroying Boss while DIVING rescues the captured fighter!
-                                    capturedShip = { x: e.x, y: e.y - 26, angle: 0, spinTimer: 34 };
+                                    capturedShip = { x: cap.x, y: cap.y, angle: 0, spinTimer: 34 };
                                     statusBannerText = 'FIGHTER RESCUED!';
                                     statusBannerColor = PALETTE.C;
                                     statusBannerTimer = 95;
@@ -2302,6 +2299,22 @@
                             addScore(pts, pts >= 400 ? e.x : null, pts >= 400 ? e.y : null);
                         }
                         break;
+                    }
+
+                    // Check accidental hit on the captured red fighter riding ABOVE/BEHIND its Boss
+                    if (e.hasCaptured) {
+                        const cap = e.getCapturedPos();
+                        if (Math.hypot(b.x - cap.x, b.y - cap.y) < 13) {
+                            bullets.splice(i, 1);
+                            hitsLanded++;
+                            hitSomething = true;
+                            e.hasCaptured = false;
+                            createExplosion(cap.x, cap.y, 22, true);
+                            GalagaSound.playEnemyDestroy('boss');
+                            const pts = (e.state === 'formation') ? 500 : 1000;
+                            addScore(pts, cap.x, cap.y, PALETTE.R);
+                            break;
+                        }
                     }
                 }
                 if (!hitSomething && b.y < -12) {
